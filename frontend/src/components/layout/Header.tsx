@@ -1,0 +1,53 @@
+import { useLocation } from 'react-router-dom';
+import { Bell, Search } from 'lucide-react';
+import { useAuthStore } from '../../store/auth';
+
+const titles: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/servers': 'Servers',
+  '/eggs': 'Egg Engines',
+  '/nodes': 'Nodes',
+  '/users': 'Users',
+  '/admin': 'Admin Panel',
+  '/settings': 'Settings',
+};
+
+export default function Header() {
+  const location = useLocation();
+  const user = useAuthStore(s => s.user);
+  const title = Object.entries(titles).find(([k]) => location.pathname.startsWith(k))?.[1] ?? 'Wizz-Craft';
+
+  return (
+    <header
+      className="flex items-center justify-between px-6 py-4 shrink-0"
+      style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+    >
+      <h1 className="text-xl font-semibold text-white">{title}</h1>
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.35)' }} />
+          <input
+            className="glass-input pl-9 pr-4 py-2 text-sm w-52"
+            placeholder="Search..."
+          />
+        </div>
+        <button
+          className="glass-btn p-2.5 relative"
+          title="Notifications"
+        >
+          <Bell size={16} style={{ color: 'rgba(255,255,255,0.7)' }} />
+          <span
+            className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
+            style={{ background: '#a78bfa' }}
+          />
+        </button>
+        <div
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold"
+          style={{ background: 'linear-gradient(135deg, #7c3aed, #38bdf8)' }}
+        >
+          {user?.username[0]?.toUpperCase()}
+        </div>
+      </div>
+    </header>
+  );
+}
