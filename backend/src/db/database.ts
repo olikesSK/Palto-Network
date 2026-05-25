@@ -75,6 +75,34 @@ export function initDatabase() {
       type TEXT NOT NULL DEFAULT 'output',
       timestamp TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS server_subusers (
+      id TEXT PRIMARY KEY,
+      server_id TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      permissions TEXT NOT NULL DEFAULT '{"console":true,"power":true,"files":false,"settings":false}',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(server_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_webhooks (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      events TEXT NOT NULL DEFAULT '["server.start","server.stop","server.crash","server.install","user.create"]',
+      enabled INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      username TEXT NOT NULL,
+      role TEXT NOT NULL,
+      channel TEXT NOT NULL DEFAULT 'global',
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   seedData();
@@ -92,6 +120,11 @@ function seedData() {
     const userHash = bcrypt.hashSync('user123', 10);
     db.prepare(`INSERT INTO users (id, username, email, password_hash, role) VALUES (?, ?, ?, ?, ?)`)
       .run(userId, 'player1', 'player@example.com', userHash, 'user');
+
+    const helperId = uuidv4();
+    const helperHash = bcrypt.hashSync('helper123', 10);
+    db.prepare(`INSERT INTO users (id, username, email, password_hash, role) VALUES (?, ?, ?, ?, ?)`)
+      .run(helperId, 'helper1', 'helper@wizz-craft.io', helperHash, 'helper');
 
     const nodeId = uuidv4();
     db.prepare(`INSERT INTO nodes (id, name, fqdn, port, memory, disk, cpu) VALUES (?, ?, ?, ?, ?, ?, ?)`)

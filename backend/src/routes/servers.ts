@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/database';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth';
+import { fireWebhook } from '../services/discord';
 
 const router = Router();
 
@@ -9,24 +10,31 @@ router.use(authenticate);
 
 router.get('/', (req: AuthRequest, res: Response) => {
   const isAdmin = req.user!.role === 'admin';
-  const servers = isAdmin
-    ? db.prepare(`
-        SELECT s.*, u.username as owner_name, n.name as node_name, e.name as egg_name, e.icon, e.color
-        FROM servers s
-        JOIN users u ON s.owner_id = u.id
-        JOIN nodes n ON s.node_id = n.id
-        JOIN eggs e ON s.egg_id = e.id
-        ORDER BY s.created_at DESC
-      `).all()
-    : db.prepare(`
-        SELECT s.*, u.username as owner_name, n.name as node_name, e.name as egg_name, e.icon, e.color
-        FROM servers s
-        JOIN users u ON s.owner_id = u.id
-        JOIN nodes n ON s.node_id = n.id
-        JOIN eggs e ON s.egg_id = e.id
-        WHERE s.owner_id = ?
-        ORDER BY s.created_at DESC
-      `).all(req.user!.id);
+  const isHelper = req.user!.role === 'helper';
+
+  let servers: any[];
+  if (isAdmin || isHelper) {
+    servers = db.prepare(`
+      SELECT s.*, u.username as owner_name, n.name as node_name, e.name as egg_name, e.icon, e.color
+      FROM servers s
+      JOIN users u ON s.owner_id = u.id
+      JOIN nodes n ON s.node_id = n.id
+      JOIN eggs e ON s.egg_id = e.id
+      ORDER BY s.created_at DESC
+    `).all();
+  } else {
+    // Own servers + servers where user is a sub-user
+    servers = db.prepare(`
+      SELECT DISTINCT s.*, u.username as owner_name, n.name as node_name, e.name as egg_name, e.icon, e.color
+      FROM servers s
+      JOIN users u ON s.owner_id = u.id
+      JOIN nodes n ON s.node_id = n.id
+      JOIN eggs e ON s.egg_id = e.id
+      LEFT JOIN server_subusers ss ON s.id = ss.server_id AND ss.user_id = ?
+      WHERE s.owner_id = ? OR ss.user_id = ?
+      ORDER BY s.created_at DESC
+    `).all(req.user!.id, req.user!.id, req.user!.id);
+  }
 
   res.json(servers);
 });
@@ -42,7 +50,13 @@ router.get('/:id', (req: AuthRequest, res: Response) => {
   `).get(req.params.id) as any;
 
   if (!server) return res.status(404).json({ error: 'Server not found' });
-  if (req.user!.role !== 'admin' && server.owner_id !== req.user!.id) {
+
+  const isAdmin = req.user!.role === 'admin';
+  const isHelper = req.user!.role === 'helper';
+  const isOwner = server.owner_id === req.user!.id;
+  const isSubuser = !!db.prepare('SELECT id FROM server_subusers WHERE server_id = ? AND user_id = ?').get(req.params.id, req.user!.id);
+
+  if (!isAdmin && !isHelper && !isOwner && !isSubuser) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
@@ -61,6 +75,7 @@ router.post('/', (req: AuthRequest, res: Response) => {
 
   setTimeout(() => {
     db.prepare("UPDATE servers SET status = 'stopped' WHERE id = ?").run(id);
+    fireWebhook('server.install', { Server: name, Status: 'Instalace dokončena' });
   }, 3000);
 
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(id);
@@ -71,7 +86,13 @@ router.patch('/:id/power', (req: AuthRequest, res: Response) => {
   const { action } = req.body;
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id) as any;
   if (!server) return res.status(404).json({ error: 'Server not found' });
-  if (req.user!.role !== 'admin' && server.owner_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
+
+  const isAdmin = req.user!.role === 'admin';
+  const isOwner = server.owner_id === req.user!.id;
+  const subuser = db.prepare('SELECT permissions FROM server_subusers WHERE server_id = ? AND user_id = ?').get(req.params.id, req.user!.id) as any;
+  const hasPowerPerm = subuser && JSON.parse(subuser.permissions).power;
+
+  if (!isAdmin && !isOwner && !hasPowerPerm) return res.status(403).json({ error: 'Forbidden' });
 
   const transitions: Record<string, { interim: string; final: string }> = {
     start: { interim: 'starting', final: 'running' },
@@ -86,6 +107,11 @@ router.patch('/:id/power', (req: AuthRequest, res: Response) => {
   db.prepare("UPDATE servers SET status = ? WHERE id = ?").run(t.interim, req.params.id);
   setTimeout(() => {
     db.prepare("UPDATE servers SET status = ? WHERE id = ?").run(t.final, req.params.id);
+    if (t.final === 'running') {
+      fireWebhook('server.start', { Server: server.name, Akce: action });
+    } else if (t.final === 'stopped') {
+      fireWebhook('server.stop', { Server: server.name, Akce: action });
+    }
   }, action === 'restart' ? 4000 : 2000);
 
   res.json({ status: t.interim });
@@ -107,6 +133,7 @@ router.delete('/:id', requireAdmin, (req: AuthRequest, res: Response) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Server not found' });
   db.prepare('DELETE FROM server_logs WHERE server_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM server_subusers WHERE server_id = ?').run(req.params.id);
   db.prepare('DELETE FROM servers WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });
