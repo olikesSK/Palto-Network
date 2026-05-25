@@ -2,7 +2,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'helper' | 'user';
   created_at: string;
   server_count?: number;
 }
@@ -84,4 +84,41 @@ export interface GlobalStats {
   totalUsers: number;
   totalNodes: number;
   onlineNodes: number;
+}
+
+export interface DiscordWebhook {
+  id: string;
+  name: string;
+  url: string;
+  events: string;
+  enabled: number;
+  created_at: string;
+}
+
+export interface ChatMessage {
+  id?: number;
+  user_id: string;
+  username: string;
+  role: string;
+  channel: string;
+  message: string;
+  created_at: string;
+}
+
+export interface OnlineUser {
+  id: string;
+  username: string;
+  role: string;
+  socketId: string;
+}
+
+export interface SubUser {
+  id: string;
+  server_id: string;
+  user_id: string;
+  username: string;
+  email: string;
+  role: string;
+  permissions: string;
+  created_at: string;
 }

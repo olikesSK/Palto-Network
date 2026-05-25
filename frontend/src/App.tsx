@@ -9,6 +9,7 @@ import Nodes from './pages/Nodes';
 import Users from './pages/Users';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
+import Webhooks from './pages/Webhooks';
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="users" element={<Users />} />
           <Route path="admin" element={<Admin />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="webhooks" element={<Webhooks />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

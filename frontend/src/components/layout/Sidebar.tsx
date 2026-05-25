@@ -1,26 +1,28 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Server, Egg, Network, Users, Settings, LogOut, Sparkles, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Server, Egg, Network, Users, Settings, LogOut, Sparkles, ShieldCheck, Bell } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
-
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/servers', icon: Server, label: 'Servers' },
-  { to: '/eggs', icon: Egg, label: 'Egg Engines' },
-  { to: '/nodes', icon: Network, label: 'Nodes' },
-];
-
-const adminItems = [
-  { to: '/users', icon: Users, label: 'Users' },
-  { to: '/admin', icon: ShieldCheck, label: 'Admin Panel' },
-];
+import { useI18n } from '../../hooks/useI18n';
 
 export default function Sidebar() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const getRoleLabel = (role: string) => {
+    if (role === 'admin') return t('role.admin');
+    if (role === 'helper') return t('role.helper');
+    return t('role.user');
+  };
+
+  const getRoleColor = (role: string) => {
+    if (role === 'admin') return '#a78bfa';
+    if (role === 'helper') return '#f59e0b';
+    return 'rgba(255,255,255,0.4)';
   };
 
   return (
@@ -49,9 +51,14 @@ export default function Sidebar() {
       {/* Nav */}
       <div className="flex-1 space-y-1">
         <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
-          General
+          {t('nav.general')}
         </div>
-        {navItems.map(item => (
+        {[
+          { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
+          { to: '/servers', icon: Server, label: t('nav.servers') },
+          { to: '/eggs', icon: Egg, label: t('nav.eggs') },
+          { to: '/nodes', icon: Network, label: t('nav.nodes') },
+        ].map(item => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -62,21 +69,27 @@ export default function Sidebar() {
           </NavLink>
         ))}
 
-        {user?.role === 'admin' && (
+        {(user?.role === 'admin' || user?.role === 'helper') && (
           <>
             <div className="px-3 mt-5 mb-2 text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              Administration
+              {t('nav.administration')}
             </div>
-            {adminItems.map(item => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}
-              >
-                <item.icon size={16} />
-                {item.label}
-              </NavLink>
-            ))}
+            {user?.role === 'admin' && (
+              <>
+                <NavLink to="/users" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+                  <Users size={16} />
+                  {t('nav.users')}
+                </NavLink>
+                <NavLink to="/admin" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+                  <ShieldCheck size={16} />
+                  {t('nav.admin')}
+                </NavLink>
+                <NavLink to="/webhooks" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+                  <Bell size={16} />
+                  {t('nav.discord')}
+                </NavLink>
+              </>
+            )}
           </>
         )}
       </div>
@@ -85,11 +98,11 @@ export default function Sidebar() {
       <div className="space-y-1 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         <NavLink to="/settings" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
           <Settings size={16} />
-          Settings
+          {t('nav.settings')}
         </NavLink>
         <button onClick={handleLogout} className="sidebar-item w-full text-left" style={{ color: 'rgba(239,68,68,0.7)' }}>
           <LogOut size={16} />
-          Sign Out
+          {t('nav.logout')}
         </button>
         <div className="flex items-center gap-3 px-3 py-2 mt-1">
           <div
@@ -100,8 +113,8 @@ export default function Sidebar() {
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium text-white truncate">{user?.username}</div>
-            <div className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {user?.role === 'admin' ? '✦ Administrator' : 'User'}
+            <div className="text-[11px] truncate font-medium" style={{ color: getRoleColor(user?.role ?? 'user') }}>
+              {getRoleLabel(user?.role ?? 'user')}
             </div>
           </div>
         </div>

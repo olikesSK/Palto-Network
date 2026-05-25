@@ -3,25 +3,33 @@ import { motion } from 'framer-motion';
 import { User, Lock, Save, Shield } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import api from '../api/client';
+import { useI18n } from '../hooks/useI18n';
 
 export default function Settings() {
   const user = useAuthStore(s => s.user);
   const fetchMe = useAuthStore(s => s.fetchMe);
+  const { t } = useI18n();
   const [form, setForm] = useState({ username: user?.username || '', email: user?.email || '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
 
+  const getRoleLabel = (role?: string) => {
+    if (role === 'admin') return t('role.admin');
+    if (role === 'helper') return t('role.helper');
+    return t('role.user');
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.password && form.password !== form.confirm) { setMsg('Passwords do not match'); return; }
+    if (form.password && form.password !== form.confirm) { setMsg(t('settings.passwordMismatch')); return; }
     setLoading(true);
     try {
       await api.patch(`/users/${user?.id}`, { username: form.username, email: form.email, ...(form.password ? { password: form.password } : {}) });
       await fetchMe();
-      setMsg('Changes saved successfully!');
+      setMsg(t('settings.savedSuccess'));
       setForm(p => ({ ...p, password: '', confirm: '' }));
     } catch {
-      setMsg('Failed to save changes');
+      setMsg(t('settings.savedError'));
     } finally {
       setLoading(false);
       setTimeout(() => setMsg(''), 3000);
@@ -36,19 +44,19 @@ export default function Settings() {
             <User size={18} style={{ color: '#a78bfa' }} />
           </div>
           <div>
-            <h3 className="font-semibold text-white">Profile Settings</h3>
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Update your account information</p>
+            <h3 className="font-semibold text-white">{t('settings.profile')}</h3>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{t('settings.profileDesc')}</p>
           </div>
         </div>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Username</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{t('settings.username')}</label>
               <input className="glass-input w-full px-4 py-2.5 text-sm" value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Email</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{t('settings.email')}</label>
               <input className="glass-input w-full px-4 py-2.5 text-sm" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
             </div>
           </div>
@@ -56,29 +64,29 @@ export default function Settings() {
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', marginTop: '16px' }}>
             <div className="flex items-center gap-2 mb-3">
               <Lock size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
-              <span className="text-sm font-medium text-white">Change Password</span>
+              <span className="text-sm font-medium text-white">{t('settings.changePassword')}</span>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>New Password</label>
-                <input className="glass-input w-full px-4 py-2.5 text-sm" type="password" placeholder="Leave blank to keep current" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{t('settings.newPassword')}</label>
+                <input className="glass-input w-full px-4 py-2.5 text-sm" type="password" placeholder={t('settings.passwordPlaceholder')} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Confirm Password</label>
-                <input className="glass-input w-full px-4 py-2.5 text-sm" type="password" placeholder="Repeat new password" value={form.confirm} onChange={e => setForm(p => ({ ...p, confirm: e.target.value }))} />
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{t('settings.confirmPassword')}</label>
+                <input className="glass-input w-full px-4 py-2.5 text-sm" type="password" placeholder={t('settings.confirmPlaceholder')} value={form.confirm} onChange={e => setForm(p => ({ ...p, confirm: e.target.value }))} />
               </div>
             </div>
           </div>
 
           {msg && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm px-3 py-2 rounded-xl"
-              style={{ background: msg.includes('success') ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: msg.includes('success') ? '#22c55e' : '#f87171', border: `1px solid ${msg.includes('success') ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
+              style={{ background: msg.includes('úspěšně') ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: msg.includes('úspěšně') ? '#22c55e' : '#f87171', border: `1px solid ${msg.includes('úspěšně') ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
               {msg}
             </motion.p>
           )}
 
           <button type="submit" disabled={loading} className="glass-btn glass-btn-primary flex items-center gap-2 px-5 py-2.5 text-sm font-medium">
-            <Save size={15} /> {loading ? 'Saving...' : 'Save Changes'}
+            <Save size={15} /> {loading ? t('settings.saving') : t('settings.save')}
           </button>
         </form>
       </motion.div>
@@ -87,13 +95,13 @@ export default function Settings() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="liquid-card p-6">
         <div className="flex items-center gap-3 mb-4">
           <Shield size={16} style={{ color: '#38bdf8' }} />
-          <h3 className="font-semibold text-white">Account Info</h3>
+          <h3 className="font-semibold text-white">{t('settings.accountInfo')}</h3>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: 'Account ID', value: user?.id?.slice(0, 8) + '...' },
-            { label: 'Role', value: user?.role === 'admin' ? '✦ Administrator' : 'User' },
-            { label: 'Member Since', value: user ? new Date(user.created_at).toLocaleDateString() : '—' },
+            { label: t('settings.accountId'), value: user?.id?.slice(0, 8) + '...' },
+            { label: t('users.role'), value: getRoleLabel(user?.role) },
+            { label: t('settings.memberSince'), value: user ? new Date(user.created_at).toLocaleDateString('cs-CZ') : '—' },
           ].map(r => (
             <div key={r.label} className="px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
               <div className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{r.label}</div>

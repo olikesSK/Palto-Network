@@ -2,6 +2,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import ChatWidget from '../chat/ChatWidget';
 
 export default function Layout() {
   const token = useAuthStore(s => s.token);
@@ -21,6 +22,7 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      <ChatWidget />
     </div>
   );
 }

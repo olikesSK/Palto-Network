@@ -4,10 +4,12 @@ import { Network, Server, MemoryStick, HardDrive, Cpu, Plus, Wifi, WifiOff } fro
 import api from '../api/client';
 import { Node } from '../types';
 import { useAuthStore } from '../store/auth';
+import { useI18n } from '../hooks/useI18n';
 
 export default function Nodes() {
   const [nodes, setNodes] = useState<Node[]>([]);
   const user = useAuthStore(s => s.user);
+  const { t } = useI18n();
 
   useEffect(() => { api.get('/nodes').then(r => setNodes(r.data)); }, []);
 
@@ -21,16 +23,25 @@ export default function Nodes() {
     maintenance: { bg: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: 'rgba(245,158,11,0.3)' },
   }[s] ?? { bg: 'rgba(107,114,128,0.15)', color: '#9ca3af', border: 'rgba(107,114,128,0.3)' });
 
+  const statusLabel = (s: string) => {
+    if (s === 'online') return t('nodes.online');
+    if (s === 'offline') return t('nodes.offline');
+    if (s === 'maintenance') return t('nodes.maintenance');
+    return s;
+  };
+
   const pct = (used: number, total: number) => Math.min((used / total) * 100, 100);
   const barColor = (p: number) => p > 85 ? '#ef4444' : p > 65 ? '#f59e0b' : '#22c55e';
 
   return (
     <div className="space-y-5 max-w-[1400px]">
       <div className="flex items-center justify-between">
-        <p className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>{nodes.length} node{nodes.length !== 1 ? 's' : ''} configured</p>
+        <p className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
+          {nodes.length} {nodes.length === 1 ? t('nodes.configured1') : t('nodes.configured')}
+        </p>
         {user?.role === 'admin' && (
           <button className="glass-btn glass-btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
-            <Plus size={16} /> Add Node
+            <Plus size={16} /> {t('nodes.add')}
           </button>
         )}
       </div>
@@ -61,7 +72,7 @@ export default function Nodes() {
                     style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}
                   >
                     {statusIcon(node.status)}
-                    {node.status.charAt(0).toUpperCase() + node.status.slice(1)}
+                    {statusLabel(node.status)}
                   </span>
                 </div>
               </div>
@@ -69,15 +80,17 @@ export default function Nodes() {
               {/* Server count */}
               <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
                 <Server size={13} style={{ color: 'rgba(255,255,255,0.4)' }} />
-                <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{node.server_count} server{node.server_count !== 1 ? 's' : ''} allocated</span>
+                <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  {node.server_count} {t('nodes.allocated')}
+                </span>
               </div>
 
               {/* Resource bars */}
               <div className="space-y-3">
                 {[
-                  { icon: MemoryStick, label: 'Memory', used: node.used_memory, total: node.memory, unit: 'MB', pct: memPct, color: '#a78bfa' },
-                  { icon: HardDrive, label: 'Disk', used: node.used_disk, total: node.disk, unit: 'MB', pct: diskPct, color: '#38bdf8' },
-                  { icon: Cpu, label: 'CPU', used: node.used_cpu, total: node.cpu, unit: '%', pct: cpuPct, color: '#f472b6' },
+                  { icon: MemoryStick, label: t('nodes.memory'), used: node.used_memory, total: node.memory, unit: 'MB', pct: memPct, color: '#a78bfa' },
+                  { icon: HardDrive, label: t('nodes.disk'), used: node.used_disk, total: node.disk, unit: 'MB', pct: diskPct, color: '#38bdf8' },
+                  { icon: Cpu, label: t('nodes.cpu'), used: node.used_cpu, total: node.cpu, unit: '%', pct: cpuPct, color: '#f472b6' },
                 ].map(r => (
                   <div key={r.label}>
                     <div className="flex items-center justify-between mb-1.5">

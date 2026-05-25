@@ -8,6 +8,8 @@ import serverRoutes from './routes/servers';
 import eggRoutes from './routes/eggs';
 import nodeRoutes from './routes/nodes';
 import userRoutes from './routes/users';
+import webhookRoutes from './routes/webhooks';
+import permissionRoutes from './routes/permissions';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from './middleware/auth';
 
@@ -24,9 +26,11 @@ initDatabase();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/servers', serverRoutes);
+app.use('/api/servers/:id/subusers', permissionRoutes);
 app.use('/api/eggs', eggRoutes);
 app.use('/api/nodes', nodeRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 app.get('/api/stats', (_req, res) => {
   const totalServers = (db.prepare('SELECT COUNT(*) as c FROM servers').get() as any).c;
@@ -39,6 +43,7 @@ app.get('/api/stats', (_req, res) => {
 });
 
 const consoleSessions = new Map<string, NodeJS.Timeout>();
+const onlineUsers = new Map<string, { id: string; username: string; role: string; socketId: string }>();
 
 io.on('connection', (socket) => {
   const token = socket.handshake.auth.token;
@@ -51,15 +56,58 @@ io.on('connection', (socket) => {
     return;
   }
 
+  // Track online users
+  onlineUsers.set(socket.id, { id: user.id, username: user.username, role: user.role, socketId: socket.id });
+  io.emit('chat:online', Array.from(onlineUsers.values()));
+
+  socket.on('disconnect', () => {
+    onlineUsers.delete(socket.id);
+    io.emit('chat:online', Array.from(onlineUsers.values()));
+    consoleSessions.forEach((interval, key) => {
+      if (key.startsWith(socket.id)) {
+        clearInterval(interval);
+        consoleSessions.delete(key);
+      }
+    });
+  });
+
+  // Chat events
+  socket.on('chat:join', (channel: string) => {
+    socket.join(`chat:${channel}`);
+    const messages = db.prepare('SELECT * FROM chat_messages WHERE channel = ? ORDER BY created_at DESC LIMIT 50').all(channel);
+    socket.emit('chat:history', { channel, messages: (messages as any[]).reverse() });
+  });
+
+  socket.on('chat:message', (data: { channel: string; message: string }) => {
+    if (!data.message?.trim() || data.message.length > 500) return;
+    const clean = data.message.trim();
+    db.prepare('INSERT INTO chat_messages (user_id, username, role, channel, message) VALUES (?, ?, ?, ?, ?)').run(
+      user.id, user.username, user.role, data.channel, clean
+    );
+    const msg = {
+      user_id: user.id,
+      username: user.username,
+      role: user.role,
+      channel: data.channel,
+      message: clean,
+      created_at: new Date().toISOString()
+    };
+    io.to(`chat:${data.channel}`).emit('chat:message', msg);
+  });
+
+  // Console events
   socket.on('console:attach', (serverId: string) => {
     const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId) as any;
     if (!server) return;
-    if (user.role !== 'admin' && server.owner_id !== user.id) return;
+    if (user.role !== 'admin' && user.role !== 'helper' && server.owner_id !== user.id) {
+      const isSubuser = db.prepare('SELECT id FROM server_subusers WHERE server_id = ? AND user_id = ?').get(serverId, user.id);
+      if (!isSubuser) return;
+    }
 
     socket.join(`console:${serverId}`);
 
     const logs = db.prepare('SELECT * FROM server_logs WHERE server_id = ? ORDER BY timestamp DESC LIMIT 50').all(serverId);
-    logs.reverse().forEach((log: any) => {
+    (logs as any[]).reverse().forEach((log: any) => {
       socket.emit('console:output', { serverId, line: log.message, type: log.type });
     });
 
@@ -75,8 +123,10 @@ io.on('connection', (socket) => {
       }, 3000 + Math.random() * 4000);
 
       consoleSessions.set(socket.id + serverId, interval);
-      socket.on('disconnect', () => clearInterval(interval));
-      socket.on('console:detach', () => clearInterval(interval));
+      socket.on('console:detach', () => {
+        clearInterval(interval);
+        consoleSessions.delete(socket.id + serverId);
+      });
     }
   });
 

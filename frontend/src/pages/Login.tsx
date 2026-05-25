@@ -3,11 +3,13 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
+import { useI18n } from '../hooks/useI18n';
 
 export default function Login() {
   const token = useAuthStore(s => s.token);
   const login = useAuthStore(s => s.login);
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [form, setForm] = useState({ username: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ export default function Login() {
       await login(form.username, form.password);
       navigate('/dashboard');
     } catch {
-      setError('Invalid username or password');
+      setError(t('login.error'));
     } finally {
       setLoading(false);
     }
@@ -93,7 +95,7 @@ export default function Login() {
                 <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.4)' }} />
                 <input
                   className="glass-input w-full pl-10 pr-4 py-3 text-sm"
-                  placeholder="Username or Email"
+                  placeholder={t('login.username')}
                   value={form.username}
                   onChange={e => setForm(p => ({ ...p, username: e.target.value }))}
                   required
@@ -105,7 +107,7 @@ export default function Login() {
                 <input
                   className="glass-input w-full pl-10 pr-11 py-3 text-sm"
                   type={showPw ? 'text' : 'password'}
-                  placeholder="Password"
+                  placeholder={t('login.password')}
                   value={form.password}
                   onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                   required
@@ -136,14 +138,14 @@ export default function Login() {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Signing in...
+                    {t('login.signingIn')}
                   </span>
-                ) : 'Sign In'}
+                ) : t('login.signIn')}
               </button>
             </form>
 
             <p className="text-center text-xs mt-6" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              Default: <code className="text-purple-400">admin</code> / <code className="text-purple-400">admin123</code>
+              {t('login.default')}: <code className="text-purple-400">admin</code> / <code className="text-purple-400">admin123</code>
             </p>
           </div>
         </div>

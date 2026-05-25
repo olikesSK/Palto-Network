@@ -7,12 +7,14 @@ import { Server as ServerType } from '../types';
 import StatusBadge from '../components/ui/StatusBadge';
 import EggIcon from '../components/eggs/EggIcon';
 import CreateServerModal from '../components/servers/CreateServerModal';
+import { useI18n } from '../hooks/useI18n';
 
 export default function Servers() {
   const [servers, setServers] = useState<ServerType[]>([]);
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { t } = useI18n();
 
   const fetchServers = () => {
     setLoading(true);
@@ -35,13 +37,13 @@ export default function Servers() {
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.35)' }} />
           <input
             className="glass-input w-full pl-10 pr-4 py-2.5 text-sm"
-            placeholder="Search servers..."
+            placeholder={t('servers.search')}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
         <button onClick={() => setShowCreate(true)} className="glass-btn glass-btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
-          <Plus size={16} /> New Server
+          <Plus size={16} /> {t('servers.new')}
         </button>
       </div>
 
@@ -55,10 +57,10 @@ export default function Servers() {
       ) : filtered.length === 0 ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="liquid-card p-16 text-center">
           <Server size={48} className="mx-auto mb-4 opacity-20" />
-          <p className="text-lg font-medium text-white">No servers found</p>
-          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Create your first server to get started</p>
+          <p className="text-lg font-medium text-white">{t('servers.noServers')}</p>
+          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{t('servers.noServersDesc')}</p>
           <button onClick={() => setShowCreate(true)} className="glass-btn glass-btn-primary px-5 py-2.5 text-sm mt-4">
-            Create Server
+            {t('servers.create')}
           </button>
         </motion.div>
       ) : (
@@ -89,9 +91,9 @@ export default function Servers() {
 
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { icon: MemoryStick, label: 'RAM', value: server.memory >= 1024 ? `${server.memory/1024}GB` : `${server.memory}MB`, color: '#a78bfa' },
-                    { icon: HardDrive, label: 'Disk', value: server.disk >= 1024 ? `${(server.disk/1024).toFixed(0)}GB` : `${server.disk}MB`, color: '#38bdf8' },
-                    { icon: Cpu, label: 'CPU', value: `${server.cpu}%`, color: '#f472b6' },
+                    { icon: MemoryStick, label: t('servers.ram'), value: server.memory >= 1024 ? `${server.memory/1024}GB` : `${server.memory}MB`, color: '#a78bfa' },
+                    { icon: HardDrive, label: t('servers.disk'), value: server.disk >= 1024 ? `${(server.disk/1024).toFixed(0)}GB` : `${server.disk}MB`, color: '#38bdf8' },
+                    { icon: Cpu, label: t('servers.cpu'), value: `${server.cpu}%`, color: '#f472b6' },
                   ].map(r => (
                     <div key={r.label} className="rounded-xl p-2.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <r.icon size={12} style={{ color: r.color }} className="mb-1" />
@@ -102,7 +104,7 @@ export default function Servers() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                  <span>Port: {server.port}</span>
+                  <span>{t('servers.port')}: {server.port}</span>
                   <span>{server.owner_name}</span>
                 </div>
               </Link>

@@ -5,12 +5,14 @@ import api from '../api/client';
 import { Egg, EggVariable } from '../types';
 import EggIcon from '../components/eggs/EggIcon';
 import { useAuthStore } from '../store/auth';
+import { useI18n } from '../hooks/useI18n';
 
 export default function Eggs() {
   const [eggs, setEggs] = useState<Egg[]>([]);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Egg | null>(null);
   const user = useAuthStore(s => s.user);
+  const { t } = useI18n();
 
   useEffect(() => { api.get('/eggs').then(r => setEggs(r.data)); }, []);
 
@@ -23,7 +25,7 @@ export default function Eggs() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Delete this egg?')) return;
+    if (!confirm('Smazat tento egg?')) return;
     await api.delete(`/eggs/${id}`);
     setEggs(prev => prev.filter(egg => egg.id !== id));
     if (selected?.id === id) setSelected(null);
@@ -35,11 +37,11 @@ export default function Eggs() {
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.35)' }} />
-          <input className="glass-input w-full pl-10 pr-4 py-2.5 text-sm" placeholder="Search eggs..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="glass-input w-full pl-10 pr-4 py-2.5 text-sm" placeholder={t('eggs.search')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         {user?.role === 'admin' && (
           <button className="glass-btn glass-btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
-            <Plus size={16} /> Import Egg
+            <Plus size={16} /> {t('eggs.import')}
           </button>
         )}
       </div>
@@ -90,7 +92,7 @@ export default function Eggs() {
           {filtered.length === 0 && (
             <div className="liquid-card p-16 text-center">
               <EggLucide size={48} className="mx-auto mb-4 opacity-20" />
-              <p className="text-white font-medium">No eggs found</p>
+              <p className="text-white font-medium">{t('eggs.noEggs')}</p>
             </div>
           )}
         </div>
@@ -112,8 +114,8 @@ export default function Eggs() {
 
               <div className="space-y-2">
                 {[
-                  { label: 'Docker Image', value: selected.docker_image },
-                  { label: 'Stop Command', value: selected.config_stop },
+                  { label: t('eggs.dockerImage'), value: selected.docker_image },
+                  { label: t('eggs.stopCommand'), value: selected.config_stop },
                 ].map(r => (
                   <div key={r.label} className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
                     <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{r.label}</div>
@@ -121,7 +123,7 @@ export default function Eggs() {
                   </div>
                 ))}
                 <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                  <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>Startup</div>
+                  <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{t('eggs.startupCommand')}</div>
                   <code className="text-xs break-all" style={{ color: '#38bdf8' }}>{selected.startup}</code>
                 </div>
               </div>
@@ -130,16 +132,16 @@ export default function Eggs() {
             {/* Variables */}
             {JSON.parse(selected.variables || '[]').length > 0 && (
               <div className="liquid-card p-5">
-                <h4 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>Variables</h4>
+                <h4 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>{t('eggs.variables')}</h4>
                 <div className="space-y-2">
                   {(JSON.parse(selected.variables) as EggVariable[]).map(v => (
                     <div key={v.name} className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
                       <div className="flex items-center justify-between mb-0.5">
                         <code className="text-xs font-semibold" style={{ color: '#f472b6' }}>{v.name}</code>
-                        {v.required && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>required</span>}
+                        {v.required && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>{t('eggs.required')}</span>}
                       </div>
                       <div className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{v.description}</div>
-                      {v.default && <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.25)' }}>Default: {v.default}</div>}
+                      {v.default && <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.25)' }}>{t('eggs.default')}: {v.default}</div>}
                     </div>
                   ))}
                 </div>

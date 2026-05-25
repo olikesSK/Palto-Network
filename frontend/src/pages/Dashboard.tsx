@@ -7,6 +7,7 @@ import api from '../api/client';
 import { GlobalStats, Server as ServerType } from '../types';
 import StatusBadge from '../components/ui/StatusBadge';
 import EggIcon from '../components/eggs/EggIcon';
+import { useI18n } from '../hooks/useI18n';
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -39,6 +40,7 @@ const mockMemData = Array.from({ length: 20 }, (_, i) => ({ t: i, v: Math.random
 export default function Dashboard() {
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [servers, setServers] = useState<ServerType[]>([]);
+  const { t } = useI18n();
 
   useEffect(() => {
     api.get('/stats').then(r => setStats(r.data));
@@ -49,23 +51,23 @@ export default function Dashboard() {
     <div className="space-y-6 max-w-[1400px]">
       {/* Welcome */}
       <motion.div {...fadeUp} transition={{ duration: 0.4 }}>
-        <h2 className="text-2xl font-bold text-white">Welcome back 👋</h2>
-        <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.45)' }}>Here's what's happening with your servers.</p>
+        <h2 className="text-2xl font-bold text-white">{t('dashboard.welcome')} 👋</h2>
+        <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.45)' }}>{t('dashboard.subtitle')}</p>
       </motion.div>
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Server} label="Total Servers" value={stats?.totalServers ?? '—'} sub="Across all nodes" color="#a78bfa" delay={0.05} />
-        <StatCard icon={Play} label="Running" value={stats?.runningServers ?? '—'} sub="Active instances" color="#22c55e" delay={0.1} />
-        <StatCard icon={Users} label="Users" value={stats?.totalUsers ?? '—'} sub="Registered accounts" color="#38bdf8" delay={0.15} />
-        <StatCard icon={Network} label="Nodes" value={`${stats?.onlineNodes ?? '—'}/${stats?.totalNodes ?? '—'}`} sub="Online / Total" color="#f472b6" delay={0.2} />
+        <StatCard icon={Server} label={t('dashboard.totalServers')} value={stats?.totalServers ?? '—'} sub={t('dashboard.acrossNodes')} color="#a78bfa" delay={0.05} />
+        <StatCard icon={Play} label={t('dashboard.running')} value={stats?.runningServers ?? '—'} sub={t('dashboard.activeInstances')} color="#22c55e" delay={0.1} />
+        <StatCard icon={Users} label={t('dashboard.users')} value={stats?.totalUsers ?? '—'} sub={t('dashboard.registeredAccounts')} color="#38bdf8" delay={0.15} />
+        <StatCard icon={Network} label={t('dashboard.nodes')} value={`${stats?.onlineNodes ?? '—'}/${stats?.totalNodes ?? '—'}`} sub={t('dashboard.onlineTotal')} color="#f472b6" delay={0.2} />
       </div>
 
       {/* Charts row */}
       <div className="grid grid-cols-2 gap-4">
         {[
-          { label: 'CPU Usage', data: mockCpuData, color: '#a78bfa', icon: Cpu },
-          { label: 'Memory Usage', data: mockMemData, color: '#38bdf8', icon: HardDrive },
+          { label: t('dashboard.cpuUsage'), data: mockCpuData, color: '#a78bfa', icon: Cpu },
+          { label: t('dashboard.memoryUsage'), data: mockMemData, color: '#38bdf8', icon: HardDrive },
         ].map((chart, i) => (
           <motion.div key={chart.label} {...fadeUp} transition={{ delay: 0.25 + i * 0.05 }} className="liquid-card p-5">
             <div className="flex items-center justify-between mb-4">
@@ -75,7 +77,7 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-1 text-xs" style={{ color: '#22c55e' }}>
                 <TrendingUp size={12} />
-                <span>Live</span>
+                <span>{t('dashboard.live')}</span>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={90}>
@@ -101,14 +103,14 @@ export default function Dashboard() {
       {/* Recent servers */}
       <motion.div {...fadeUp} transition={{ delay: 0.35 }} className="liquid-card">
         <div className="flex items-center justify-between p-5 pb-3">
-          <h3 className="font-semibold text-white">Recent Servers</h3>
+          <h3 className="font-semibold text-white">{t('dashboard.recentServers')}</h3>
           <Link to="/servers" className="flex items-center gap-1 text-xs" style={{ color: '#a78bfa' }}>
-            View all <ArrowRight size={12} />
+            {t('dashboard.viewAll')} <ArrowRight size={12} />
           </Link>
         </div>
         <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
           {servers.length === 0 && (
-            <div className="px-5 py-8 text-center text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>No servers yet</div>
+            <div className="px-5 py-8 text-center text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>{t('dashboard.noServers')}</div>
           )}
           {servers.map(server => (
             <Link
@@ -128,7 +130,7 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-4 shrink-0">
                 <div className="text-right hidden sm:block">
-                  <div className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>RAM</div>
+                  <div className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{t('servers.ram')}</div>
                   <div className="text-xs text-white font-medium">{server.memory >= 1024 ? `${server.memory/1024}GB` : `${server.memory}MB`}</div>
                 </div>
                 <StatusBadge status={server.status} />
