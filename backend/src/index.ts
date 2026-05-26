@@ -20,10 +20,12 @@ import databasesRoutes from './routes/databases';
 import auditRoutes from './routes/audit';
 import announcementsRoutes from './routes/announcements';
 import settingsRoutes from './routes/settings';
+import discordBotRoutes from './routes/discord-bot';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from './middleware/auth';
 import * as processManager from './services/process';
 import { restoreSchedules } from './routes/schedules';
+import { discordBot } from './services/discordBot';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -77,6 +79,7 @@ app.use('/api/apikeys', apikeysRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/announcements', announcementsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/discord-bot', discordBotRoutes);
 
 app.get('/api/stats', (_req, res) => {
   const totalServers = (db.prepare('SELECT COUNT(*) as c FROM servers').get() as { c: number }).c;
@@ -216,4 +219,12 @@ httpServer.listen(PORT, () => {
   console.log(`Palto-Network backend running on port ${PORT}`);
   // Restore scheduled tasks from DB
   restoreSchedules();
+
+  // Auto-start Discord bot if enabled
+  const botConfig = db.prepare('SELECT enabled FROM discord_bot_config WHERE id = ?').get('main') as { enabled: number } | undefined;
+  if (botConfig?.enabled) {
+    discordBot.start().then(r => {
+      if (!r.success) console.warn('[Discord Bot] Auto-start failed:', r.error);
+    });
+  }
 });

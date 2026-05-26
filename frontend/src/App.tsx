@@ -15,6 +15,7 @@ import AuditLog from './pages/AuditLog';
 import Announcements from './pages/Announcements';
 import PanelSettings from './pages/PanelSettings';
 import StatusPage from './pages/StatusPage';
+import DiscordBot from './pages/DiscordBot';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="audit" element={<AuditLog />} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="panel-settings" element={<PanelSettings />} />
+          <Route path="discord-bot" element={<DiscordBot />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

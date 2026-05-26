@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Server, Egg, Network, Users, Settings, LogOut, Sparkles, ShieldCheck, Bell, ClipboardList, Megaphone, SlidersHorizontal, Key } from 'lucide-react';
+import { LayoutDashboard, Server, Egg, Network, Users, Settings, LogOut, Sparkles, ShieldCheck, Bell, ClipboardList, Megaphone, SlidersHorizontal, Key, Bot } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { useI18n } from '../../hooks/useI18n';
 
@@ -96,6 +96,10 @@ export default function Sidebar() {
                 <NavLink to="/webhooks" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
                   <Bell size={16} />
                   {t('nav.discord')}
+                </NavLink>
+                <NavLink to="/discord-bot" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+                  <Bot size={16} />
+                  Discord Bot
                 </NavLink>
                 <NavLink to="/audit" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
                   <ClipboardList size={16} />
