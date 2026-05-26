@@ -971,14 +971,14 @@ export class DiscordBotService {
     if (!msg.guild || msg.author?.bot) return;
     const ch = await this.getLogChannel('message_delete_channel', msg.guild);
     if (!ch) return;
-    await ch.send({ embeds: [new EmbedBuilder().setTitle('🗑️ Message Deleted').addFields({ name: 'Author', value: msg.author?.tag ?? 'Unknown', inline: true }, { name: 'Channel', value: `<#${msg.channelId}>`, inline: true }, { name: 'Content', value: msg.content?.slice(0, 1000) || '*no content*' }).setColor(0xef4444).setTimestamp()] }).catch(() => {});
+    await ch.send({ embeds: [new EmbedBuilder().setTitle('🗑️ Správa zmazaná').addFields({ name: 'Autor', value: msg.author?.tag ?? 'Neznámy', inline: true }, { name: 'Kanál', value: `<#${msg.channelId}>`, inline: true }, { name: 'Obsah', value: msg.content?.slice(0, 1000) || '*žiadny obsah*' }).setColor(0xef4444).setTimestamp()] }).catch(() => {});
   }
 
   private async logMessageUpdate(oldMsg: Message, newMsg: Message) {
     if (!newMsg.guild || newMsg.author?.bot || oldMsg.content === newMsg.content) return;
     const ch = await this.getLogChannel('message_edit_channel', newMsg.guild);
     if (!ch) return;
-    await ch.send({ embeds: [new EmbedBuilder().setTitle('✏️ Message Edited').addFields({ name: 'Author', value: newMsg.author?.tag ?? 'Unknown', inline: true }, { name: 'Channel', value: `<#${newMsg.channelId}>`, inline: true }, { name: 'Before', value: oldMsg.content?.slice(0, 500) || '*empty*' }, { name: 'After', value: newMsg.content?.slice(0, 500) || '*empty*' }).setColor(0xf59e0b).setTimestamp()] }).catch(() => {});
+    await ch.send({ embeds: [new EmbedBuilder().setTitle('✏️ Správa upravená').addFields({ name: 'Autor', value: newMsg.author?.tag ?? 'Neznámy', inline: true }, { name: 'Kanál', value: `<#${newMsg.channelId}>`, inline: true }, { name: 'Pred', value: oldMsg.content?.slice(0, 500) || '*prázdne*' }, { name: 'Po', value: newMsg.content?.slice(0, 500) || '*prázdne*' }).setColor(0xf59e0b).setTimestamp()] }).catch(() => {});
   }
 
   private async logVoiceActivity(oldState: VoiceState, newState: VoiceState) {
@@ -999,9 +999,9 @@ export class DiscordBotService {
     const added = newMember.roles.cache.filter(r => !(oldMember as GuildMember).roles?.cache.has(r.id));
     const removed = (oldMember as GuildMember).roles?.cache.filter(r => !newMember.roles.cache.has(r.id));
     if (!added.size && !removed?.size) return;
-    const embed = new EmbedBuilder().setTitle('👑 Roles Updated').addFields({ name: 'Member', value: newMember.user.tag, inline: true });
-    if (added.size) embed.addFields({ name: '+ Added', value: added.map(r => `<@&${r.id}>`).join(', '), inline: true });
-    if (removed?.size) embed.addFields({ name: '- Removed', value: removed.map(r => `<@&${r.id}>`).join(', '), inline: true });
+    const embed = new EmbedBuilder().setTitle('👑 Roly aktualizované').addFields({ name: 'Člen', value: newMember.user.tag, inline: true });
+    if (added.size) embed.addFields({ name: '+ Pridané', value: added.map(r => `<@&${r.id}>`).join(', '), inline: true });
+    if (removed?.size) embed.addFields({ name: '- Odobrané', value: removed.map(r => `<@&${r.id}>`).join(', '), inline: true });
     await ch.send({ embeds: [embed.setColor(0xa78bfa).setTimestamp()] }).catch(() => {});
   }
 
