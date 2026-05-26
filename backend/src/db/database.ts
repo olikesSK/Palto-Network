@@ -401,6 +401,7 @@ export function initDatabase() {
   try { db.exec("ALTER TABLE users ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0"); } catch {}
   try { db.exec("ALTER TABLE users ADD COLUMN language TEXT NOT NULL DEFAULT 'cs'"); } catch {}
   try { db.exec("ALTER TABLE users ADD COLUMN email_notifications INTEGER NOT NULL DEFAULT 1"); } catch {}
+  try { db.exec("ALTER TABLE servers ADD COLUMN container_id TEXT"); } catch {}
 
   seedData();
 }

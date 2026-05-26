@@ -3,13 +3,12 @@ import path from 'path';
 import fs from 'fs';
 import { db } from '../db/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { SERVER_DATA_ROOT } from '../services/process';
 
 const router = Router({ mergeParams: true });
 
-const SERVERS_ROOT = '/tmp/wizz-servers';
-
 function serverDir(serverId: string): string {
-  const dir = path.join(SERVERS_ROOT, serverId);
+  const dir = path.join(SERVER_DATA_ROOT, serverId);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
