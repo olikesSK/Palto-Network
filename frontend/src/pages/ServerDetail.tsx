@@ -112,7 +112,7 @@ export default function ServerDetail() {
   useEffect(() => {
     if (tab === 'permissions') {
       fetchSubusers();
-      if (currentUser?.role === 'admin') {
+      if (currentUser?.role === 'zakladatel') {
         api.get('/users').then(r => setAllUsers(r.data)).catch(() => {});
       }
     }
@@ -192,7 +192,7 @@ export default function ServerDetail() {
     </div>
   );
 
-  const isOwnerOrAdmin = currentUser?.role === 'admin' || server.owner_id === currentUser?.id;
+  const isOwnerOrAdmin = currentUser?.role === 'zakladatel' || currentUser?.role === 'spravca' || server.owner_id === currentUser?.id;
 
   const tabs: { key: Tab; icon: React.ElementType; label: string }[] = [
     { key: 'console', icon: Terminal, label: t('server.console') },

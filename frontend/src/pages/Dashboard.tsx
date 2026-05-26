@@ -111,7 +111,7 @@ export default function Dashboard() {
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const { t } = useI18n();
   const user = useAuthStore(s => s.user);
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'zakladatel';
 
   const load = useCallback(async () => {
     const [s, srv, hist, act] = await Promise.allSettled([

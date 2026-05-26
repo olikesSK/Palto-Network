@@ -204,120 +204,120 @@ export class DiscordBotService {
 
   private async registerSlashCommands(token: string, guildId: string) {
     const commands = [
-      new SlashCommandBuilder().setName('ticket-setup').setDescription('Create a ticket panel in a channel')
-        .addChannelOption(o => o.setName('channel').setDescription('Channel for the panel').setRequired(true))
+      new SlashCommandBuilder().setName('ticket-setup').setDescription('Vytvoríš ticket panel v kanáli')
+        .addChannelOption(o => o.setName('channel').setDescription('Kanál pre panel').setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
-      new SlashCommandBuilder().setName('ticket-close').setDescription('Close this ticket')
-        .addStringOption(o => o.setName('reason').setDescription('Reason for closing').setRequired(false)),
+      new SlashCommandBuilder().setName('ticket-close').setDescription('Zatvoriť tento ticket')
+        .addStringOption(o => o.setName('reason').setDescription('Dôvod zatvorenia').setRequired(false)),
 
-      new SlashCommandBuilder().setName('warn').setDescription('Warn a member')
-        .addUserOption(o => o.setName('user').setDescription('Member to warn').setRequired(true))
-        .addStringOption(o => o.setName('reason').setDescription('Reason').setRequired(true))
+      new SlashCommandBuilder().setName('warn').setDescription('Upozorniť člena')
+        .addUserOption(o => o.setName('user').setDescription('Člen na upozornenie').setRequired(true))
+        .addStringOption(o => o.setName('reason').setDescription('Dôvod').setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
-      new SlashCommandBuilder().setName('warns').setDescription('List warnings for a user')
-        .addUserOption(o => o.setName('user').setDescription('Member').setRequired(false))
+      new SlashCommandBuilder().setName('warns').setDescription('Zoznam varovaní používateľa')
+        .addUserOption(o => o.setName('user').setDescription('Člen').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
-      new SlashCommandBuilder().setName('delwarn').setDescription('Delete a warning by ID')
-        .addStringOption(o => o.setName('id').setDescription('Warning ID').setRequired(true))
+      new SlashCommandBuilder().setName('delwarn').setDescription('Zmazať varovanie podľa ID')
+        .addStringOption(o => o.setName('id').setDescription('ID varovania').setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
-      new SlashCommandBuilder().setName('ban').setDescription('Ban a member')
-        .addUserOption(o => o.setName('user').setDescription('Member to ban').setRequired(true))
-        .addStringOption(o => o.setName('reason').setDescription('Reason').setRequired(false))
-        .addIntegerOption(o => o.setName('delete_messages').setDescription('Days of messages to delete (0-7)').setMinValue(0).setMaxValue(7).setRequired(false))
+      new SlashCommandBuilder().setName('ban').setDescription('Zabanvať člena')
+        .addUserOption(o => o.setName('user').setDescription('Člen na zaban').setRequired(true))
+        .addStringOption(o => o.setName('reason').setDescription('Dôvod').setRequired(false))
+        .addIntegerOption(o => o.setName('delete_messages').setDescription('Dni správ na zmazanie (0-7)').setMinValue(0).setMaxValue(7).setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
-      new SlashCommandBuilder().setName('unban').setDescription('Unban a user by ID')
-        .addStringOption(o => o.setName('user_id').setDescription('User ID').setRequired(true))
-        .addStringOption(o => o.setName('reason').setDescription('Reason').setRequired(false))
+      new SlashCommandBuilder().setName('unban').setDescription('Odbanvať používateľa podľa ID')
+        .addStringOption(o => o.setName('user_id').setDescription('ID používateľa').setRequired(true))
+        .addStringOption(o => o.setName('reason').setDescription('Dôvod').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
-      new SlashCommandBuilder().setName('kick').setDescription('Kick a member')
-        .addUserOption(o => o.setName('user').setDescription('Member to kick').setRequired(true))
-        .addStringOption(o => o.setName('reason').setDescription('Reason').setRequired(false))
+      new SlashCommandBuilder().setName('kick').setDescription('Vykopnúť člena')
+        .addUserOption(o => o.setName('user').setDescription('Člen na vykopnutie').setRequired(true))
+        .addStringOption(o => o.setName('reason').setDescription('Dôvod').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 
-      new SlashCommandBuilder().setName('mute').setDescription('Timeout a member')
-        .addUserOption(o => o.setName('user').setDescription('Member to mute').setRequired(true))
-        .addStringOption(o => o.setName('duration').setDescription('Duration (e.g. 1h30m, 1d)').setRequired(true))
-        .addStringOption(o => o.setName('reason').setDescription('Reason').setRequired(false))
+      new SlashCommandBuilder().setName('mute').setDescription('Stlmiť člena')
+        .addUserOption(o => o.setName('user').setDescription('Člen na stlmenie').setRequired(true))
+        .addStringOption(o => o.setName('duration').setDescription('Trvanie (napr. 1h30m)').setRequired(true))
+        .addStringOption(o => o.setName('reason').setDescription('Dôvod').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
-      new SlashCommandBuilder().setName('unmute').setDescription('Remove timeout from a member')
-        .addUserOption(o => o.setName('user').setDescription('Member').setRequired(true))
+      new SlashCommandBuilder().setName('unmute').setDescription('Odtlmiť člena')
+        .addUserOption(o => o.setName('user').setDescription('Člen').setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
-      new SlashCommandBuilder().setName('purge').setDescription('Delete messages in bulk')
-        .addIntegerOption(o => o.setName('amount').setDescription('Number of messages (1-100)').setMinValue(1).setMaxValue(100).setRequired(true))
-        .addUserOption(o => o.setName('user').setDescription('Filter by user').setRequired(false))
+      new SlashCommandBuilder().setName('purge').setDescription('Zmazať správy')
+        .addIntegerOption(o => o.setName('amount').setDescription('Počet správ (1-100)').setMinValue(1).setMaxValue(100).setRequired(true))
+        .addUserOption(o => o.setName('user').setDescription('Zmazať iba správy tohto používateľa').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
-      new SlashCommandBuilder().setName('giveaway').setDescription('Giveaway management')
-        .addSubcommand(s => s.setName('start').setDescription('Start a giveaway')
-          .addStringOption(o => o.setName('duration').setDescription('Duration (e.g. 1h, 2d)').setRequired(true))
-          .addIntegerOption(o => o.setName('winners').setDescription('Number of winners').setMinValue(1).setMaxValue(20).setRequired(true))
-          .addStringOption(o => o.setName('prize').setDescription('Prize').setRequired(true))
-          .addChannelOption(o => o.setName('channel').setDescription('Channel (default: current)').setRequired(false)))
-        .addSubcommand(s => s.setName('end').setDescription('End a giveaway early').addStringOption(o => o.setName('id').setDescription('Giveaway ID').setRequired(true)))
-        .addSubcommand(s => s.setName('reroll').setDescription('Reroll giveaway winners').addStringOption(o => o.setName('id').setDescription('Giveaway ID').setRequired(true)))
-        .addSubcommand(s => s.setName('list').setDescription('List active giveaways'))
+      new SlashCommandBuilder().setName('giveaway').setDescription('Spravovať giveawaye')
+        .addSubcommand(s => s.setName('start').setDescription('Spustiť giveaway')
+          .addStringOption(o => o.setName('duration').setDescription('Trvanie (napr. 1h, 2d)').setRequired(true))
+          .addIntegerOption(o => o.setName('winners').setDescription('Počet víťazov').setMinValue(1).setMaxValue(20).setRequired(true))
+          .addStringOption(o => o.setName('prize').setDescription('Cena').setRequired(true))
+          .addChannelOption(o => o.setName('channel').setDescription('Kanál (predvolený: aktuálny)').setRequired(false)))
+        .addSubcommand(s => s.setName('end').setDescription('Ukončiť giveaway').addStringOption(o => o.setName('id').setDescription('ID správy').setRequired(true)))
+        .addSubcommand(s => s.setName('reroll').setDescription('Znovu losovať giveaway').addStringOption(o => o.setName('id').setDescription('ID správy').setRequired(true)))
+        .addSubcommand(s => s.setName('list').setDescription('Zoznam aktívnych giveawayov'))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
-      new SlashCommandBuilder().setName('level').setDescription('Show your or another user\'s level')
-        .addUserOption(o => o.setName('user').setDescription('User').setRequired(false)),
+      new SlashCommandBuilder().setName('level').setDescription('Zobraziť tvoju XP úroveň')
+        .addUserOption(o => o.setName('user').setDescription('Používateľ').setRequired(false)),
 
-      new SlashCommandBuilder().setName('leaderboard').setDescription('Show the XP leaderboard'),
+      new SlashCommandBuilder().setName('leaderboard').setDescription('XP rebríček'),
 
-      new SlashCommandBuilder().setName('say').setDescription('Make the bot say something')
-        .addStringOption(o => o.setName('message').setDescription('Message to send').setRequired(true))
-        .addChannelOption(o => o.setName('channel').setDescription('Channel (default: current)').setRequired(false))
+      new SlashCommandBuilder().setName('say').setDescription('Napísať niečo cez bota')
+        .addStringOption(o => o.setName('message').setDescription('Text správy').setRequired(true))
+        .addChannelOption(o => o.setName('channel').setDescription('Kanál (predvolený: aktuálny)').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
-      new SlashCommandBuilder().setName('embed').setDescription('Send a custom embed')
-        .addStringOption(o => o.setName('title').setDescription('Embed title').setRequired(true))
-        .addStringOption(o => o.setName('description').setDescription('Embed description').setRequired(true))
-        .addStringOption(o => o.setName('color').setDescription('Color hex (e.g. #7c3aed)').setRequired(false))
-        .addChannelOption(o => o.setName('channel').setDescription('Channel').setRequired(false))
+      new SlashCommandBuilder().setName('embed').setDescription('Odoslať embed správu')
+        .addStringOption(o => o.setName('title').setDescription('Nadpis').setRequired(true))
+        .addStringOption(o => o.setName('description').setDescription('Popis').setRequired(true))
+        .addStringOption(o => o.setName('color').setDescription('Farba (hex)').setRequired(false))
+        .addChannelOption(o => o.setName('channel').setDescription('Kanál').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
-      new SlashCommandBuilder().setName('role').setDescription('Add or remove a role from a member')
-        .addSubcommand(s => s.setName('add').setDescription('Add role')
-          .addUserOption(o => o.setName('user').setDescription('Member').setRequired(true))
-          .addRoleOption(o => o.setName('role').setDescription('Role').setRequired(true)))
-        .addSubcommand(s => s.setName('remove').setDescription('Remove role')
-          .addUserOption(o => o.setName('user').setDescription('Member').setRequired(true))
-          .addRoleOption(o => o.setName('role').setDescription('Role').setRequired(true)))
+      new SlashCommandBuilder().setName('role').setDescription('Pridať/odobrať rolu členovi')
+        .addSubcommand(s => s.setName('add').setDescription('Pridať rolu')
+          .addUserOption(o => o.setName('user').setDescription('Člen').setRequired(true))
+          .addRoleOption(o => o.setName('role').setDescription('Rola na pridanie/odobranie').setRequired(true)))
+        .addSubcommand(s => s.setName('remove').setDescription('Odobrať rolu')
+          .addUserOption(o => o.setName('user').setDescription('Člen').setRequired(true))
+          .addRoleOption(o => o.setName('role').setDescription('Rola na pridanie/odobranie').setRequired(true)))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
-      new SlashCommandBuilder().setName('userinfo').setDescription('Show info about a user')
-        .addUserOption(o => o.setName('user').setDescription('User').setRequired(false)),
+      new SlashCommandBuilder().setName('userinfo').setDescription('Zobraziť informácie o používateľovi')
+        .addUserOption(o => o.setName('user').setDescription('Používateľ').setRequired(false)),
 
-      new SlashCommandBuilder().setName('serverinfo').setDescription('Show server info'),
+      new SlashCommandBuilder().setName('serverinfo').setDescription('Zobraziť informácie o serveri'),
 
-      new SlashCommandBuilder().setName('avatar').setDescription('Show a user\'s avatar')
-        .addUserOption(o => o.setName('user').setDescription('User').setRequired(false)),
+      new SlashCommandBuilder().setName('avatar').setDescription('Zobraziť avatar')
+        .addUserOption(o => o.setName('user').setDescription('Používateľ').setRequired(false)),
 
-      new SlashCommandBuilder().setName('slowmode').setDescription('Set channel slowmode')
-        .addIntegerOption(o => o.setName('seconds').setDescription('Seconds (0 to disable)').setMinValue(0).setMaxValue(21600).setRequired(true))
-        .addChannelOption(o => o.setName('channel').setDescription('Channel').setRequired(false))
+      new SlashCommandBuilder().setName('slowmode').setDescription('Nastaviť pomalý režim')
+        .addIntegerOption(o => o.setName('seconds').setDescription('Sekundy (0 vypnúť)').setMinValue(0).setMaxValue(21600).setRequired(true))
+        .addChannelOption(o => o.setName('channel').setDescription('Kanál').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
-      new SlashCommandBuilder().setName('lock').setDescription('Lock a channel')
-        .addChannelOption(o => o.setName('channel').setDescription('Channel').setRequired(false))
+      new SlashCommandBuilder().setName('lock').setDescription('Zamknúť kanál')
+        .addChannelOption(o => o.setName('channel').setDescription('Kanál').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
-      new SlashCommandBuilder().setName('unlock').setDescription('Unlock a channel')
-        .addChannelOption(o => o.setName('channel').setDescription('Channel').setRequired(false))
+      new SlashCommandBuilder().setName('unlock').setDescription('Odomknúť kanál')
+        .addChannelOption(o => o.setName('channel').setDescription('Kanál').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
-      new SlashCommandBuilder().setName('ping').setDescription('Check bot latency'),
+      new SlashCommandBuilder().setName('ping').setDescription('Pingnúť bota'),
 
-      new SlashCommandBuilder().setName('poll').setDescription('Create a poll')
-        .addStringOption(o => o.setName('question').setDescription('Poll question').setRequired(true))
-        .addStringOption(o => o.setName('options').setDescription('Options separated by | (e.g. Yes|No|Maybe)').setRequired(false))
+      new SlashCommandBuilder().setName('poll').setDescription('Vytvoriť anketu')
+        .addStringOption(o => o.setName('question').setDescription('Otázka ankety').setRequired(true))
+        .addStringOption(o => o.setName('options').setDescription('Možnosti oddelené | (napr. Áno|Nie|Možno)').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
     ];
 
@@ -366,7 +366,7 @@ export class DiscordBotService {
       }
     } catch (err) {
       console.error(`[Discord Bot] Command error (${commandName}):`, err);
-      const msg = { content: '❌ An error occurred.', ephemeral: true };
+      const msg = { content: '❌ Nastala chyba.', ephemeral: true };
       if (interaction.replied || interaction.deferred) await interaction.followUp(msg).catch(() => {});
       else await interaction.reply(msg).catch(() => {});
     }
@@ -409,22 +409,22 @@ export class DiscordBotService {
       .setFooter({ text: interaction.guild!.name, iconURL: interaction.guild!.iconURL() ?? undefined });
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId('create_ticket').setLabel('📩 Open Ticket').setStyle(ButtonStyle.Primary)
+      new ButtonBuilder().setCustomId('create_ticket').setLabel('📩 Otvoriť ticket').setStyle(ButtonStyle.Primary)
     );
 
     await channel.send({ embeds: [embed], components: [row] });
-    await interaction.reply({ content: `✅ Ticket panel created in ${channel}`, ephemeral: true });
+    await interaction.reply({ content: `✅ Ticket panel vytvorený v ${channel}`, ephemeral: true });
   }
 
   private async handleCreateTicket(interaction: ButtonInteraction) {
     const config = db.prepare('SELECT * FROM discord_ticket_config WHERE id = ?').get('main') as TicketConfig;
-    if (!config.enabled) { await interaction.reply({ content: '❌ Ticket system is disabled.', ephemeral: true }); return; }
+    if (!config.enabled) { await interaction.reply({ content: '❌ Systém ticketov je vypnutý.', ephemeral: true }); return; }
 
     const guild = interaction.guild!;
     const user = interaction.user;
 
     const existingTicket = db.prepare("SELECT * FROM discord_tickets WHERE user_id = ? AND status = 'open'").get(user.id);
-    if (existingTicket) { await interaction.reply({ content: '❌ You already have an open ticket!', ephemeral: true }); return; }
+    if (existingTicket) { await interaction.reply({ content: '❌ Už máš otvorený ticket!', ephemeral: true }); return; }
 
     await interaction.deferReply({ ephemeral: true });
 
@@ -448,39 +448,39 @@ export class DiscordBotService {
     db.prepare('INSERT INTO discord_tickets (id, channel_id, user_id, username) VALUES (?, ?, ?, ?)').run(ticketId, channel.id, user.id, user.username);
 
     const welcome = config.welcome_message.replace(/{user}/g, `<@${user.id}>`);
-    const embed = new EmbedBuilder().setTitle('🎫 Ticket Opened').setDescription(welcome).setColor(0x7c3aed).setFooter({ text: `Ticket ID: ${ticketId.slice(0, 8)}` }).setTimestamp();
+    const embed = new EmbedBuilder().setTitle('🎫 Ticket otvorený').setDescription(welcome).setColor(0x7c3aed).setFooter({ text: `Ticket ID: ${ticketId.slice(0, 8)}` }).setTimestamp();
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId('close_ticket').setLabel('🔒 Close Ticket').setStyle(ButtonStyle.Danger)
+      new ButtonBuilder().setCustomId('close_ticket').setLabel('🔒 Zatvoriť ticket').setStyle(ButtonStyle.Danger)
     );
 
     await channel.send({ content: `<@${user.id}>${config.support_role_id ? ` <@&${config.support_role_id}>` : ''}`, embeds: [embed], components: [row] });
-    await interaction.editReply({ content: `✅ Your ticket has been created: ${channel}` });
+    await interaction.editReply({ content: `✅ Tvoj ticket bol vytvorený: ${channel}` });
   }
 
   private async cmdTicketClose(interaction: ChatInputCommandInteraction) {
     const ticket = db.prepare("SELECT * FROM discord_tickets WHERE channel_id = ? AND status = 'open'").get(interaction.channelId) as { id: string; user_id: string } | undefined;
-    if (!ticket) { await interaction.reply({ content: '❌ This is not a ticket channel.', ephemeral: true }); return; }
-    const reason = interaction.options.getString('reason') ?? 'No reason provided';
+    if (!ticket) { await interaction.reply({ content: '❌ Toto nie je ticket kanál.', ephemeral: true }); return; }
+    const reason = interaction.options.getString('reason') ?? 'Dôvod nebol uvedený';
     await this.closeTicket(interaction, ticket.id, reason);
   }
 
   private async handleCloseTicket(interaction: ButtonInteraction) {
     const ticket = db.prepare("SELECT * FROM discord_tickets WHERE channel_id = ? AND status = 'open'").get(interaction.channelId) as { id: string } | undefined;
-    if (!ticket) { await interaction.reply({ content: '❌ Ticket not found.', ephemeral: true }); return; }
+    if (!ticket) { await interaction.reply({ content: '❌ Ticket nebol nájdený.', ephemeral: true }); return; }
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId('confirm_close_ticket').setLabel('✅ Confirm Close').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId('cancel_close_ticket').setLabel('Cancel').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId('confirm_close_ticket').setLabel('✅ Potvrdiť zatvorenie').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId('cancel_close_ticket').setLabel('Zrušiť').setStyle(ButtonStyle.Secondary),
     );
-    await interaction.reply({ content: 'Are you sure you want to close this ticket?', components: [row], ephemeral: true });
+    await interaction.reply({ content: 'Naozaj chceš zatvoriť tento ticket?', components: [row], ephemeral: true });
   }
 
   private async handleConfirmCloseTicket(interaction: ButtonInteraction) {
     const ticket = db.prepare("SELECT * FROM discord_tickets WHERE channel_id = ? AND status = 'open'").get(interaction.channelId) as { id: string } | undefined;
-    if (!ticket) { await interaction.update({ content: '❌ Ticket not found.', components: [] }); return; }
-    await interaction.update({ content: 'Closing ticket...', components: [] });
-    await this.closeTicket(interaction, ticket.id, 'Closed by user');
+    if (!ticket) { await interaction.update({ content: '❌ Ticket nebol nájdený.', components: [] }); return; }
+    await interaction.update({ content: 'Zatváranie ticketu...', components: [] });
+    await this.closeTicket(interaction, ticket.id, 'Uzavrel používateľ');
   }
 
   private async closeTicket(interaction: ChatInputCommandInteraction | ButtonInteraction, ticketId: string, reason: string) {
@@ -496,16 +496,16 @@ export class DiscordBotService {
     if (config.log_channel_id) {
       const logChannel = guild.channels.cache.get(config.log_channel_id) as TextChannel | undefined;
       if (logChannel) {
-        const embed = new EmbedBuilder().setTitle('🎫 Ticket Closed').addFields(
-          { name: 'Channel', value: channel.name, inline: true },
-          { name: 'Closed by', value: interaction.user.tag, inline: true },
-          { name: 'Reason', value: reason, inline: false },
+        const embed = new EmbedBuilder().setTitle('🎫 Ticket zatvorený').addFields(
+          { name: 'Kanál', value: channel.name, inline: true },
+          { name: 'Uzavrel', value: interaction.user.tag, inline: true },
+          { name: 'Dôvod', value: reason, inline: false },
         ).setColor(0xef4444).setTimestamp();
         await logChannel.send({ embeds: [embed] }).catch(() => {});
       }
     }
 
-    await channel.send({ embeds: [new EmbedBuilder().setDescription(`🔒 Ticket closed by ${interaction.user.tag}. Reason: ${reason}`).setColor(0xef4444)] });
+    await channel.send({ embeds: [new EmbedBuilder().setDescription(`🔒 Ticket uzavrel ${interaction.user.tag}. Dôvod: ${reason}`).setColor(0xef4444)] });
     setTimeout(async () => { await channel.delete().catch(() => {}); }, 5000);
   }
 
@@ -518,22 +518,22 @@ export class DiscordBotService {
     db.prepare('INSERT INTO discord_warns (id, user_id, username, moderator_id, moderator_username, reason) VALUES (?, ?, ?, ?, ?, ?)').run(id, target.user.id, target.user.username, interaction.user.id, interaction.user.username, reason);
     db.prepare("INSERT INTO discord_mod_logs (action, user_id, username, moderator_id, moderator_username, reason) VALUES ('warn', ?, ?, ?, ?, ?)").run(target.user.id, target.user.username, interaction.user.id, interaction.user.username, reason);
     const warns = (db.prepare('SELECT COUNT(*) as c FROM discord_warns WHERE user_id = ?').get(target.user.id) as { c: number }).c;
-    const embed = new EmbedBuilder().setTitle('⚠️ Member Warned').addFields(
-      { name: 'Member', value: `${target.user.tag}`, inline: true },
-      { name: 'Moderator', value: interaction.user.tag, inline: true },
-      { name: 'Reason', value: reason, inline: false },
-      { name: 'Total Warns', value: String(warns), inline: true },
-      { name: 'Warn ID', value: id.slice(0, 8), inline: true },
+    const embed = new EmbedBuilder().setTitle('⚠️ Člen upozornený').addFields(
+      { name: 'Člen', value: `${target.user.tag}`, inline: true },
+      { name: 'Moderátor', value: interaction.user.tag, inline: true },
+      { name: 'Dôvod', value: reason, inline: false },
+      { name: 'Celkovo varovaní', value: String(warns), inline: true },
+      { name: 'ID varovania', value: id.slice(0, 8), inline: true },
     ).setColor(0xf59e0b).setTimestamp();
     await interaction.reply({ embeds: [embed] });
-    try { await target.send({ embeds: [new EmbedBuilder().setTitle(`⚠️ You were warned in ${interaction.guild!.name}`).setDescription(`**Reason:** ${reason}`).setColor(0xf59e0b)] }); } catch {}
+    try { await target.send({ embeds: [new EmbedBuilder().setTitle(`⚠️ Bol si upozornený na serveri ${interaction.guild!.name}`).setDescription(`**Dôvod:** ${reason}`).setColor(0xf59e0b)] }); } catch {}
   }
 
   private async cmdWarns(interaction: ChatInputCommandInteraction) {
     const target = interaction.options.getUser('user') ?? interaction.user;
     const warns = db.prepare('SELECT * FROM discord_warns WHERE user_id = ? ORDER BY created_at DESC LIMIT 10').all(target.id) as { id: string; reason: string; moderator_username: string; created_at: string }[];
-    const embed = new EmbedBuilder().setTitle(`⚠️ Warnings for ${target.username}`).setColor(0xf59e0b);
-    if (warns.length === 0) embed.setDescription('No warnings found.');
+    const embed = new EmbedBuilder().setTitle(`⚠️ Varovania pre ${target.username}`).setColor(0xf59e0b);
+    if (warns.length === 0) embed.setDescription('Žiadne varovania.');
     else embed.setDescription(warns.map((w, i) => `**${i + 1}.** \`${w.id.slice(0, 8)}\` - ${w.reason}\n*by ${w.moderator_username} • ${new Date(w.created_at).toLocaleDateString()}*`).join('\n\n'));
     await interaction.reply({ embeds: [embed], ephemeral: true });
   }
@@ -541,19 +541,19 @@ export class DiscordBotService {
   private async cmdDelwarn(interaction: ChatInputCommandInteraction) {
     const id = interaction.options.getString('id', true);
     const warn = db.prepare('SELECT * FROM discord_warns WHERE id LIKE ?').get(`${id}%`) as { id: string } | undefined;
-    if (!warn) { await interaction.reply({ content: '❌ Warning not found.', ephemeral: true }); return; }
+    if (!warn) { await interaction.reply({ content: '❌ Varovanie nebolo nájdené.', ephemeral: true }); return; }
     db.prepare('DELETE FROM discord_warns WHERE id = ?').run(warn.id);
-    await interaction.reply({ content: `✅ Warning \`${warn.id.slice(0, 8)}\` deleted.`, ephemeral: true });
+    await interaction.reply({ content: `✅ Varovanie \`${warn.id.slice(0, 8)}\` zmazané.`, ephemeral: true });
   }
 
   private async cmdBan(interaction: ChatInputCommandInteraction) {
     const target = interaction.options.getMember('user') as GuildMember | null;
     const reason = interaction.options.getString('reason') ?? 'No reason provided';
     const delDays = interaction.options.getInteger('delete_messages') ?? 0;
-    if (!target) { await interaction.reply({ content: '❌ Member not found.', ephemeral: true }); return; }
+    if (!target) { await interaction.reply({ content: '❌ Člen nebol nájdený.', ephemeral: true }); return; }
     await target.ban({ reason, deleteMessageSeconds: delDays * 86400 });
     db.prepare("INSERT INTO discord_mod_logs (action, user_id, username, moderator_id, moderator_username, reason) VALUES ('ban', ?, ?, ?, ?, ?)").run(target.user.id, target.user.username, interaction.user.id, interaction.user.username, reason);
-    await interaction.reply({ embeds: [new EmbedBuilder().setTitle('🔨 Member Banned').addFields({ name: 'Member', value: target.user.tag, inline: true }, { name: 'Reason', value: reason }).setColor(0xef4444).setTimestamp()] });
+    await interaction.reply({ embeds: [new EmbedBuilder().setTitle('🔨 Člen zabanovaný').addFields({ name: 'Člen', value: target.user.tag, inline: true }, { name: 'Dôvod', value: reason }).setColor(0xef4444).setTimestamp()] });
   }
 
   private async cmdUnban(interaction: ChatInputCommandInteraction) {
@@ -561,16 +561,16 @@ export class DiscordBotService {
     const reason = interaction.options.getString('reason') ?? 'No reason provided';
     await interaction.guild!.members.unban(userId, reason);
     db.prepare("INSERT INTO discord_mod_logs (action, user_id, username, moderator_id, moderator_username, reason) VALUES ('unban', ?, 'Unknown', ?, ?, ?)").run(userId, interaction.user.id, interaction.user.username, reason);
-    await interaction.reply({ content: `✅ User \`${userId}\` has been unbanned.` });
+    await interaction.reply({ content: `✅ Používateľ \`${userId}\` bol odbanovaný.` });
   }
 
   private async cmdKick(interaction: ChatInputCommandInteraction) {
     const target = interaction.options.getMember('user') as GuildMember | null;
     const reason = interaction.options.getString('reason') ?? 'No reason provided';
-    if (!target) { await interaction.reply({ content: '❌ Member not found.', ephemeral: true }); return; }
+    if (!target) { await interaction.reply({ content: '❌ Člen nebol nájdený.', ephemeral: true }); return; }
     await target.kick(reason);
     db.prepare("INSERT INTO discord_mod_logs (action, user_id, username, moderator_id, moderator_username, reason) VALUES ('kick', ?, ?, ?, ?, ?)").run(target.user.id, target.user.username, interaction.user.id, interaction.user.username, reason);
-    await interaction.reply({ embeds: [new EmbedBuilder().setTitle('👢 Member Kicked').addFields({ name: 'Member', value: target.user.tag }, { name: 'Reason', value: reason }).setColor(0xf97316).setTimestamp()] });
+    await interaction.reply({ embeds: [new EmbedBuilder().setTitle('👢 Člen vykopnutý').addFields({ name: 'Člen', value: target.user.tag }, { name: 'Dôvod', value: reason }).setColor(0xf97316).setTimestamp()] });
   }
 
   private async cmdMute(interaction: ChatInputCommandInteraction) {
@@ -578,17 +578,17 @@ export class DiscordBotService {
     const durStr = interaction.options.getString('duration', true);
     const reason = interaction.options.getString('reason') ?? 'No reason provided';
     const durMs = parseDuration(durStr);
-    if (!target || !durMs) { await interaction.reply({ content: '❌ Invalid member or duration.', ephemeral: true }); return; }
+    if (!target || !durMs) { await interaction.reply({ content: '❌ Neplatný člen alebo trvanie.', ephemeral: true }); return; }
     await target.timeout(durMs, reason);
     db.prepare("INSERT INTO discord_mod_logs (action, user_id, username, moderator_id, moderator_username, reason, duration) VALUES ('mute', ?, ?, ?, ?, ?, ?)").run(target.user.id, target.user.username, interaction.user.id, interaction.user.username, reason, formatDuration(durMs));
-    await interaction.reply({ embeds: [new EmbedBuilder().setTitle('🔇 Member Muted').addFields({ name: 'Member', value: target.user.tag, inline: true }, { name: 'Duration', value: formatDuration(durMs), inline: true }, { name: 'Reason', value: reason }).setColor(0x6366f1).setTimestamp()] });
+    await interaction.reply({ embeds: [new EmbedBuilder().setTitle('🔇 Člen stlmený').addFields({ name: 'Člen', value: target.user.tag, inline: true }, { name: 'Trvanie', value: formatDuration(durMs), inline: true }, { name: 'Dôvod', value: reason }).setColor(0x6366f1).setTimestamp()] });
   }
 
   private async cmdUnmute(interaction: ChatInputCommandInteraction) {
     const target = interaction.options.getMember('user') as GuildMember | null;
-    if (!target) { await interaction.reply({ content: '❌ Member not found.', ephemeral: true }); return; }
+    if (!target) { await interaction.reply({ content: '❌ Člen nebol nájdený.', ephemeral: true }); return; }
     await target.timeout(null);
-    await interaction.reply({ content: `✅ ${target.user.tag} has been unmuted.` });
+    await interaction.reply({ content: `✅ ${target.user.tag} bol odtlmený.` });
   }
 
   private async cmdPurge(interaction: ChatInputCommandInteraction) {
@@ -598,7 +598,7 @@ export class DiscordBotService {
     let messages = await channel.messages.fetch({ limit: amount + 1 });
     if (user) messages = messages.filter(m => m.author.id === user.id);
     const deleted = await channel.bulkDelete(messages, true);
-    await interaction.reply({ content: `✅ Deleted ${deleted.size} message(s).`, ephemeral: true });
+    await interaction.reply({ content: `✅ Zmazané ${deleted.size} správ.`, ephemeral: true });
   }
 
   // ─── GIVEAWAY SYSTEM ───────────────────────────────────────────────────────
@@ -617,25 +617,25 @@ export class DiscordBotService {
     const prize = interaction.options.getString('prize', true);
     const targetChannel = (interaction.options.getChannel('channel') ?? interaction.channel) as TextChannel;
     const durMs = parseDuration(durStr);
-    if (!durMs) { await interaction.reply({ content: '❌ Invalid duration format. Use: 1h, 30m, 1d', ephemeral: true }); return; }
+    if (!durMs) { await interaction.reply({ content: '❌ Neplatný formát trvania. Použi: 1h, 30m, 1d', ephemeral: true }); return; }
 
     const id = uuidv4();
     const endsAt = new Date(Date.now() + durMs).toISOString();
 
     const embed = new EmbedBuilder()
-      .setTitle('🎉 GIVEAWAY!')
-      .setDescription(`**Prize:** ${prize}\n**Winners:** ${winners}\n**Hosted by:** ${interaction.user}\n**Ends:** <t:${Math.floor((Date.now() + durMs) / 1000)}:R>`)
+      .setTitle('🎉 Giveaway!')
+      .setDescription(`**Cena:** ${prize}\n**Víťazi:** ${winners}\n**Organizátor:** ${interaction.user}\n**Koniec:** <t:${Math.floor((Date.now() + durMs) / 1000)}:R>`)
       .setColor(0x7c3aed)
-      .setFooter({ text: `ID: ${id.slice(0, 8)} • React 🎉 to enter` })
+      .setFooter({ text: `ID: ${id.slice(0, 8)} • Stlač 🎉 pre vstup` })
       .setTimestamp(new Date(endsAt));
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId('giveaway_enter').setLabel('🎉 Enter (0)').setStyle(ButtonStyle.Primary)
+      new ButtonBuilder().setCustomId('giveaway_enter').setLabel('🎉 Zapojiť sa (0)').setStyle(ButtonStyle.Primary)
     );
 
     const msg = await targetChannel.send({ embeds: [embed], components: [row] });
     db.prepare('INSERT INTO discord_giveaways (id, channel_id, message_id, prize, winners_count, host_id, host_username, ends_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, targetChannel.id, msg.id, prize, winners, interaction.user.id, interaction.user.username, endsAt);
-    await interaction.reply({ content: `✅ Giveaway started in ${targetChannel}!`, ephemeral: true });
+    await interaction.reply({ content: `✅ Giveaway spustený v ${targetChannel}!`, ephemeral: true });
 
     const timer = setTimeout(() => this.endGiveawayById(id), durMs);
     this.giveawayTimers.set(id, timer);
@@ -643,22 +643,22 @@ export class DiscordBotService {
 
   private async handleGiveawayEnter(interaction: ButtonInteraction) {
     const giveaway = db.prepare("SELECT * FROM discord_giveaways WHERE message_id = ? AND ended = 0 AND cancelled = 0").get(interaction.message.id) as Giveaway | undefined;
-    if (!giveaway) { await interaction.reply({ content: '❌ This giveaway has ended.', ephemeral: true }); return; }
+    if (!giveaway) { await interaction.reply({ content: '❌ Tento giveaway sa skončil.', ephemeral: true }); return; }
 
     const entries: string[] = JSON.parse(giveaway.entries);
     if (entries.includes(interaction.user.id)) {
       const idx = entries.indexOf(interaction.user.id);
       entries.splice(idx, 1);
       db.prepare('UPDATE discord_giveaways SET entries = ? WHERE id = ?').run(JSON.stringify(entries), giveaway.id);
-      await interaction.reply({ content: '✅ You left the giveaway.', ephemeral: true });
+      await interaction.reply({ content: '✅ Odhlásil si sa z giveawaya.', ephemeral: true });
     } else {
       entries.push(interaction.user.id);
       db.prepare('UPDATE discord_giveaways SET entries = ? WHERE id = ?').run(JSON.stringify(entries), giveaway.id);
-      await interaction.reply({ content: '🎉 You entered the giveaway!', ephemeral: true });
+      await interaction.reply({ content: '🎉 Zapojil si sa do giveawaya!', ephemeral: true });
     }
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId('giveaway_enter').setLabel(`🎉 Enter (${entries.length})`).setStyle(ButtonStyle.Primary)
+      new ButtonBuilder().setCustomId('giveaway_enter').setLabel(`🎉 Zapojiť sa (${entries.length})`).setStyle(ButtonStyle.Primary)
     );
     await interaction.message.edit({ components: [row] }).catch(() => {});
   }
@@ -682,43 +682,43 @@ export class DiscordBotService {
     const channel = this.client.channels.cache.get(giveaway.channel_id) as TextChannel | undefined;
     if (!channel) return;
 
-    const winnerMentions = winnerIds.length > 0 ? winnerIds.map(w => `<@${w}>`).join(', ') : 'No winners (no entries)';
+    const winnerMentions = winnerIds.length > 0 ? winnerIds.map(w => `<@${w}>`).join(', ') : 'Žiadny víťaz (málo účastníkov)';
     const msg = await channel.messages.fetch(giveaway.message_id).catch(() => null);
     if (msg) {
-      const embed = new EmbedBuilder().setTitle('🎉 GIVEAWAY ENDED').setDescription(`**Prize:** ${giveaway.prize}\n**Winners:** ${winnerMentions}\n**Hosted by:** <@${giveaway.host_id}>`).setColor(0x6b7280).setFooter({ text: `ID: ${id.slice(0, 8)}` }).setTimestamp();
+      const embed = new EmbedBuilder().setTitle('🎉 Giveaway skončil!').setDescription(`**Cena:** ${giveaway.prize}\n**Víťazi:** ${winnerMentions}\n**Organizátor:** <@${giveaway.host_id}>`).setColor(0x6b7280).setFooter({ text: `ID: ${id.slice(0, 8)}` }).setTimestamp();
       await msg.edit({ embeds: [embed], components: [] }).catch(() => {});
     }
 
-    if (winnerIds.length > 0) await channel.send({ content: `🎉 Congratulations ${winnerMentions}! You won **${giveaway.prize}**!` });
-    else await channel.send({ content: `😔 No winners for **${giveaway.prize}** (no entries).` });
+    if (winnerIds.length > 0) await channel.send({ content: `🎉 Gratulujeme ${winnerMentions}! Vyhral si **${giveaway.prize}**!` });
+    else await channel.send({ content: `😔 Žiadny víťaz pre **${giveaway.prize}** (žiadni účastníci).` });
   }
 
   private async endGiveaway(interaction: ChatInputCommandInteraction) {
     const id = interaction.options.getString('id', true);
     const giveaway = db.prepare('SELECT * FROM discord_giveaways WHERE id LIKE ? AND ended = 0').get(`${id}%`) as Giveaway | undefined;
-    if (!giveaway) { await interaction.reply({ content: '❌ Active giveaway not found.', ephemeral: true }); return; }
+    if (!giveaway) { await interaction.reply({ content: '❌ Žiadny aktívny giveaway nenájdený.', ephemeral: true }); return; }
     const timer = this.giveawayTimers.get(giveaway.id);
     if (timer) clearTimeout(timer);
     await this.endGiveawayById(giveaway.id);
-    await interaction.reply({ content: '✅ Giveaway ended!', ephemeral: true });
+    await interaction.reply({ content: '✅ Giveaway ukončený!', ephemeral: true });
   }
 
   private async rerollGiveaway(interaction: ChatInputCommandInteraction) {
     const id = interaction.options.getString('id', true);
     const giveaway = db.prepare('SELECT * FROM discord_giveaways WHERE id LIKE ? AND ended = 1').get(`${id}%`) as Giveaway | undefined;
-    if (!giveaway) { await interaction.reply({ content: '❌ Ended giveaway not found.', ephemeral: true }); return; }
+    if (!giveaway) { await interaction.reply({ content: '❌ Ukončený giveaway nenájdený.', ephemeral: true }); return; }
     const entries: string[] = JSON.parse(giveaway.entries);
-    if (!entries.length) { await interaction.reply({ content: '❌ No entries to reroll.', ephemeral: true }); return; }
+    if (!entries.length) { await interaction.reply({ content: '❌ Žiadni účastníci pre nové losovanie.', ephemeral: true }); return; }
     const winner = entries[Math.floor(Math.random() * entries.length)];
     const channel = interaction.channel as TextChannel;
-    await channel.send({ content: `🎉 New winner: <@${winner}>! Congratulations on winning **${giveaway.prize}**!` });
-    await interaction.reply({ content: '✅ Rerolled!', ephemeral: true });
+    await channel.send({ content: `🎉 Nový víťaz: <@${winner}>! Gratulujeme k výhre **${giveaway.prize}**!` });
+    await interaction.reply({ content: '✅ Znovu vylosované!', ephemeral: true });
   }
 
   private async listGiveaways(interaction: ChatInputCommandInteraction) {
     const giveaways = db.prepare('SELECT * FROM discord_giveaways WHERE ended = 0 AND cancelled = 0 ORDER BY ends_at ASC LIMIT 10').all() as Giveaway[];
-    const embed = new EmbedBuilder().setTitle('🎉 Active Giveaways').setColor(0x7c3aed);
-    if (!giveaways.length) embed.setDescription('No active giveaways.');
+    const embed = new EmbedBuilder().setTitle('🎉 Aktívne giveawaye').setColor(0x7c3aed);
+    if (!giveaways.length) embed.setDescription('Žiadne aktívne giveawaye.');
     else embed.setDescription(giveaways.map(g => `**${g.prize}** - ${g.winners_count} winner(s)\n\`${g.id.slice(0, 8)}\` • Ends <t:${Math.floor(new Date(g.ends_at).getTime() / 1000)}:R>`).join('\n\n'));
     await interaction.reply({ embeds: [embed], ephemeral: true });
   }
@@ -826,7 +826,7 @@ export class DiscordBotService {
         if (role) await msg.member?.roles.add(role).catch(() => {});
       }
 
-      await msg.channel.send({ embeds: [new EmbedBuilder().setDescription(`🎉 Congrats ${msg.author}! You reached **Level ${newLevel}**!`).setColor(0x7c3aed)] }).catch(() => {});
+      await msg.channel.send({ embeds: [new EmbedBuilder().setDescription(`🎉 Gratulujeme ${msg.author}! Dosiahol si **Úroveň ${newLevel}**!`).setColor(0x7c3aed)] }).catch(() => {});
     }
   }
 
@@ -836,20 +836,20 @@ export class DiscordBotService {
     const xp = row?.xp ?? 0; const level = row?.level ?? 0; const messages = row?.messages ?? 0;
     const xpNeeded = xpForLevel(level);
     const bar = '█'.repeat(Math.floor((xp / xpNeeded) * 10)) + '░'.repeat(10 - Math.floor((xp / xpNeeded) * 10));
-    const embed = new EmbedBuilder().setTitle(`📊 ${target.username}'s Level`).setThumbnail(target.displayAvatarURL()).addFields(
-      { name: 'Level', value: String(level), inline: true },
+    const embed = new EmbedBuilder().setTitle(`📊 Úroveň hráča ${target.username}`).setThumbnail(target.displayAvatarURL()).addFields(
+      { name: 'Úroveň', value: String(level), inline: true },
       { name: 'XP', value: `${xp}/${xpNeeded}`, inline: true },
-      { name: 'Messages', value: String(messages), inline: true },
-      { name: 'Progress', value: `\`${bar}\` ${Math.floor((xp / xpNeeded) * 100)}%`, inline: false },
+      { name: 'Správy', value: String(messages), inline: true },
+      { name: 'Postup', value: `\`${bar}\` ${Math.floor((xp / xpNeeded) * 100)}%`, inline: false },
     ).setColor(0x7c3aed);
     await interaction.reply({ embeds: [embed] });
   }
 
   private async cmdLeaderboard(interaction: ChatInputCommandInteraction) {
     const rows = db.prepare('SELECT * FROM discord_levels ORDER BY level DESC, xp DESC LIMIT 10').all() as { user_id: string; username: string; level: number; xp: number; messages: number }[];
-    const embed = new EmbedBuilder().setTitle('🏆 XP Leaderboard').setColor(0x7c3aed);
+    const embed = new EmbedBuilder().setTitle('🏆 XP Rebríček').setColor(0x7c3aed);
     const medals = ['🥇', '🥈', '🥉'];
-    if (!rows.length) embed.setDescription('No data yet.');
+    if (!rows.length) embed.setDescription('Zatiaľ žiadne dáta.');
     else embed.setDescription(rows.map((r, i) => `${medals[i] ?? `**${i + 1}.**`} <@${r.user_id}> — Level **${r.level}** • ${r.xp} XP`).join('\n'));
     await interaction.reply({ embeds: [embed] });
   }
@@ -857,8 +857,21 @@ export class DiscordBotService {
   // ─── REACTION ROLES ────────────────────────────────────────────────────────
 
   private async handleReactionAdd(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
-    if (reaction.partial) { try { await reaction.fetch(); } catch { return; } }
-    const rr = db.prepare('SELECT * FROM discord_reaction_roles WHERE message_id = ? AND emoji = ?').get(reaction.message.id, reaction.emoji.name ?? reaction.emoji.id ?? '') as { role_id: string } | undefined;
+    try {
+      if (reaction.partial) await reaction.fetch();
+      if (reaction.message.partial) await reaction.message.fetch();
+    } catch { return; }
+
+    const emojiStr = reaction.emoji.id
+      ? `${reaction.emoji.name}:${reaction.emoji.id}`
+      : (reaction.emoji.name ?? '');
+
+    const rr = db.prepare(
+      'SELECT * FROM discord_reaction_roles WHERE message_id = ? AND (emoji = ? OR emoji = ? OR emoji = ?)'
+    ).get(
+      reaction.message.id, emojiStr, reaction.emoji.name ?? '', reaction.emoji.id ?? ''
+    ) as { role_id: string } | undefined;
+
     if (!rr || !reaction.message.guild) return;
     const member = await reaction.message.guild.members.fetch(user.id).catch(() => null);
     const role = reaction.message.guild.roles.cache.get(rr.role_id);
@@ -866,8 +879,21 @@ export class DiscordBotService {
   }
 
   private async handleReactionRemove(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
-    if (reaction.partial) { try { await reaction.fetch(); } catch { return; } }
-    const rr = db.prepare('SELECT * FROM discord_reaction_roles WHERE message_id = ? AND emoji = ?').get(reaction.message.id, reaction.emoji.name ?? reaction.emoji.id ?? '') as { role_id: string } | undefined;
+    try {
+      if (reaction.partial) await reaction.fetch();
+      if (reaction.message.partial) await reaction.message.fetch();
+    } catch { return; }
+
+    const emojiStr = reaction.emoji.id
+      ? `${reaction.emoji.name}:${reaction.emoji.id}`
+      : (reaction.emoji.name ?? '');
+
+    const rr = db.prepare(
+      'SELECT * FROM discord_reaction_roles WHERE message_id = ? AND (emoji = ? OR emoji = ? OR emoji = ?)'
+    ).get(
+      reaction.message.id, emojiStr, reaction.emoji.name ?? '', reaction.emoji.id ?? ''
+    ) as { role_id: string } | undefined;
+
     if (!rr || !reaction.message.guild) return;
     const member = await reaction.message.guild.members.fetch(user.id).catch(() => null);
     const role = reaction.message.guild.roles.cache.get(rr.role_id);
@@ -901,15 +927,15 @@ export class DiscordBotService {
 
     // Bad words
     const badWords: string[] = JSON.parse(config.bad_words || '[]');
-    if (badWords.some(w => content.includes(w.toLowerCase()))) { violated = true; reason = 'Bad word'; }
+    if (badWords.some(w => content.includes(w.toLowerCase()))) { violated = true; reason = 'Nevhodné slovo'; }
 
     // Anti-links
     if (!violated && config.anti_links && /https?:\/\//.test(msg.content)) {
-      if (!msg.member?.permissions.has(PermissionFlagsBits.ManageMessages)) { violated = true; reason = 'Links not allowed'; }
+      if (!msg.member?.permissions.has(PermissionFlagsBits.ManageMessages)) { violated = true; reason = 'Linky nie sú povolené'; }
     }
 
     // Anti-invites
-    if (!violated && config.anti_invites && /discord\.gg\/\w+/i.test(msg.content)) { violated = true; reason = 'Discord invites not allowed'; }
+    if (!violated && config.anti_invites && /discord\.gg\/\w+/i.test(msg.content)) { violated = true; reason = 'Discord pozvánky nie sú povolené'; }
 
     // Anti-spam
     if (!violated && config.anti_spam) {
@@ -919,16 +945,16 @@ export class DiscordBotService {
       const filtered = times.filter(t => now - t < config.spam_interval * 1000);
       filtered.push(now);
       this.spamTracker.set(key, filtered);
-      if (filtered.length >= config.spam_threshold) { violated = true; reason = 'Spam detected'; }
+      if (filtered.length >= config.spam_threshold) { violated = true; reason = 'Zistený spam'; }
     }
 
     if (violated) {
       await msg.delete().catch(() => {});
-      const warn = await msg.channel.send({ content: `⚠️ ${msg.author}, your message was removed: **${reason}**` }).catch(() => null);
+      const warn = await msg.channel.send({ content: `⚠️ ${msg.author}, tvoja správa bola zmazaná: **${reason}**` }).catch(() => null);
       if (warn) setTimeout(() => warn.delete().catch(() => {}), 5000);
       if (config.log_channel) {
         const logCh = msg.guild.channels.cache.get(config.log_channel) as TextChannel | undefined;
-        if (logCh) await logCh.send({ embeds: [new EmbedBuilder().setTitle('🛡️ Automod').addFields({ name: 'User', value: msg.author.tag, inline: true }, { name: 'Reason', value: reason, inline: true }, { name: 'Channel', value: `<#${msg.channelId}>`, inline: true }, { name: 'Content', value: msg.content.slice(0, 200) }).setColor(0xef4444).setTimestamp()] }).catch(() => {});
+        if (logCh) await logCh.send({ embeds: [new EmbedBuilder().setTitle('🛡️ Automod').addFields({ name: 'Používateľ', value: msg.author.tag, inline: true }, { name: 'Dôvod', value: reason, inline: true }, { name: 'Kanál', value: `<#${msg.channelId}>`, inline: true }, { name: 'Obsah', value: msg.content.slice(0, 200) }).setColor(0xef4444).setTimestamp()] }).catch(() => {});
       }
     }
   }
