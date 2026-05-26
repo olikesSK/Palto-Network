@@ -2,7 +2,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  role: 'admin' | 'helper' | 'user';
+  role: 'zakladatel' | 'spravca' | 'user';
   created_at: string;
   server_count?: number;
 }

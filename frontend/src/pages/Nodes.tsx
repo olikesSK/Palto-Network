@@ -39,7 +39,7 @@ export default function Nodes() {
         <p className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
           {nodes.length} {nodes.length === 1 ? t('nodes.configured1') : t('nodes.configured')}
         </p>
-        {user?.role === 'admin' && (
+        {user?.role === 'zakladatel' && (
           <button className="glass-btn glass-btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
             <Plus size={16} /> {t('nodes.add')}
           </button>

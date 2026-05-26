@@ -39,7 +39,7 @@ export default function Eggs() {
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.35)' }} />
           <input className="glass-input w-full pl-10 pr-4 py-2.5 text-sm" placeholder={t('eggs.search')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        {user?.role === 'admin' && (
+        {user?.role === 'zakladatel' && (
           <button className="glass-btn glass-btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
             <Plus size={16} /> {t('eggs.import')}
           </button>
@@ -72,7 +72,7 @@ export default function Eggs() {
                       <div className="text-xs mt-1 font-mono truncate" style={{ color: 'rgba(255,255,255,0.25)' }}>{egg.docker_image}</div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {user?.role === 'admin' && (
+                      {user?.role === 'zakladatel' && (
                         <>
                           <button onClick={e => { e.stopPropagation(); }} className="glass-btn p-1.5">
                             <Edit size={12} style={{ color: 'rgba(255,255,255,0.5)' }} />

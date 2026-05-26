@@ -3,7 +3,7 @@ export interface User {
   username: string;
   email: string;
   password_hash: string;
-  role: 'admin' | 'user';
+  role: 'zakladatel' | 'spravca' | 'user';
   created_at: string;
 }
 

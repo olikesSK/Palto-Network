@@ -23,9 +23,9 @@ export default function Settings() {
   const [totpEnabled, setTotpEnabled] = useState((user as { totp_enabled?: number })?.totp_enabled === 1);
 
   const getRoleLabel = (role?: string) => {
-    if (role === 'admin') return t('role.admin');
-    if (role === 'helper') return t('role.helper');
-    return t('role.user');
+    if (role === 'zakladatel') return 'Zakladateľ';
+    if (role === 'spravca') return 'Správca';
+    return 'Užívateľ';
   };
 
   const handleSave = async (e: React.FormEvent) => {
