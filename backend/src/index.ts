@@ -81,6 +81,11 @@ app.use('/api/announcements', announcementsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/discord-bot', discordBotRoutes);
 
+app.get('/api/docker-status', async (_req, res) => {
+  const result = await processManager.checkDocker();
+  res.json(result);
+});
+
 app.get('/api/stats', (_req, res) => {
   const totalServers = (db.prepare('SELECT COUNT(*) as c FROM servers').get() as { c: number }).c;
   const runningServers = (db.prepare("SELECT COUNT(*) as c FROM servers WHERE status = 'running'").get() as { c: number }).c;

@@ -4,6 +4,7 @@ import { db } from '../db/database';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth';
 import { fireWebhook } from '../services/discord';
 import * as processManager from '../services/process';
+import { pullServerImage } from '../services/process';
 
 const router = Router();
 
@@ -80,17 +81,19 @@ router.post('/', (req: AuthRequest, res: Response) => {
   if (mem > node.memory) return res.status(400).json({ error: `Memory exceeds node limit (${node.memory} MB)` });
   if (dsk > node.disk) return res.status(400).json({ error: `Disk exceeds node limit (${node.disk} MB)` });
 
+  const egg = db.prepare('SELECT name FROM eggs WHERE id = ?').get(egg_id) as { name: string } | undefined;
+  if (!egg) return res.status(404).json({ error: 'Egg not found' });
+
   const id = uuidv4();
   db.prepare(`
     INSERT INTO servers (id, name, description, owner_id, node_id, egg_id, memory, disk, cpu, port, environment, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'installing')
   `).run(id, name.trim(), description || '', req.user!.id, node_id, egg_id, mem, dsk, cpuPct, portNum, JSON.stringify(environment || {}));
 
-  // Simulate install then set to stopped
-  setTimeout(() => {
-    db.prepare("UPDATE servers SET status = 'stopped' WHERE id = ?").run(id);
-    fireWebhook('server.install', { Server: name, Status: 'Instalace dokončena' });
-  }, 3000);
+  // Pull Docker image in background, then mark stopped
+  pullServerImage(egg.name, id).then(() => {
+    fireWebhook('server.install', { Server: name, Status: 'Installation complete' });
+  });
 
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(id);
   res.status(201).json(server);
@@ -257,7 +260,9 @@ router.get('/:id/logs', (req: AuthRequest, res: Response) => {
 });
 
 router.post('/:id/reinstall', (req: AuthRequest, res: Response) => {
-  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id) as { owner_id: string; name: string } | undefined;
+  const server = db.prepare(`
+    SELECT s.*, e.name as egg_name FROM servers s JOIN eggs e ON s.egg_id = e.id WHERE s.id = ?
+  `).get(req.params.id) as { owner_id: string; name: string; egg_name: string } | undefined;
   if (!server) return res.status(404).json({ error: 'Server not found' });
   if (req.user!.role !== 'admin' && server.owner_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
 
@@ -266,9 +271,7 @@ router.post('/:id/reinstall', (req: AuthRequest, res: Response) => {
   }
 
   db.prepare("UPDATE servers SET status = 'installing' WHERE id = ?").run(req.params.id);
-  setTimeout(() => {
-    db.prepare("UPDATE servers SET status = 'stopped' WHERE id = ?").run(req.params.id);
-  }, 5000);
+  pullServerImage(server.egg_name, req.params.id);
   res.json({ success: true });
 });
 

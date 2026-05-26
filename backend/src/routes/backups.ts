@@ -5,13 +5,11 @@ import fs from 'fs';
 import { exec } from 'child_process';
 import { db } from '../db/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { SERVER_DATA_ROOT, BACKUP_DATA_ROOT } from '../services/process';
 
 const router = Router({ mergeParams: true });
 
-const SERVERS_ROOT = '/tmp/wizz-servers';
-const BACKUPS_ROOT = '/tmp/wizz-backups';
-
-fs.mkdirSync(BACKUPS_ROOT, { recursive: true });
+fs.mkdirSync(BACKUP_DATA_ROOT, { recursive: true });
 
 function checkAccess(req: AuthRequest, serverId: string): boolean {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId) as { owner_id: string } | undefined;
@@ -36,8 +34,8 @@ router.post('/:id/backups', authenticate, (req: AuthRequest, res: Response) => {
 
   const id = uuidv4();
   const archiveName = `backup_${id}.tar.gz`;
-  const archivePath = path.join(BACKUPS_ROOT, archiveName);
-  const serverPath = path.join(SERVERS_ROOT, req.params.id);
+  const archivePath = path.join(BACKUP_DATA_ROOT, archiveName);
+  const serverPath = path.join(SERVER_DATA_ROOT, req.params.id);
 
   db.prepare("INSERT INTO backups (id, server_id, name, note, status, size) VALUES (?, ?, ?, ?, 'pending', 0)")
     .run(id, req.params.id, name, note || '');
@@ -71,17 +69,17 @@ router.post('/:id/backups/:backupId/restore', authenticate, (req: AuthRequest, r
   if (!backup) return res.status(404).json({ error: 'Backup not found' });
   if (backup.status !== 'completed') return res.status(400).json({ error: 'Backup not completed' });
 
-  const archivePath = path.join(BACKUPS_ROOT, `backup_${backup.id}.tar.gz`);
+  const archivePath = path.join(BACKUP_DATA_ROOT, `backup_${backup.id}.tar.gz`);
   if (!fs.existsSync(archivePath)) {
     return res.status(404).json({ error: 'Backup archive not found on disk' });
   }
 
-  const serverPath = path.join(SERVERS_ROOT, req.params.id);
+  const serverPath = path.join(SERVER_DATA_ROOT, req.params.id);
 
   db.prepare("UPDATE servers SET status = 'installing' WHERE id = ?").run(req.params.id);
 
   // Extract to a temp dir then replace server dir
-  const tmpDir = path.join(BACKUPS_ROOT, `restore_${Date.now()}`);
+  const tmpDir = path.join(BACKUP_DATA_ROOT, `restore_${Date.now()}`);
   exec(`mkdir -p "${tmpDir}" && tar -xzf "${archivePath}" -C "${tmpDir}"`, (err) => {
     if (err) {
       db.prepare("UPDATE servers SET status = 'stopped' WHERE id = ?").run(req.params.id);
@@ -110,7 +108,7 @@ router.delete('/:id/backups/:backupId', authenticate, (req: AuthRequest, res: Re
   if (!backup) return res.status(404).json({ error: 'Backup not found' });
 
   // Delete archive from disk
-  const archivePath = path.join(BACKUPS_ROOT, `backup_${backup.id}.tar.gz`);
+  const archivePath = path.join(BACKUP_DATA_ROOT, `backup_${backup.id}.tar.gz`);
   if (fs.existsSync(archivePath)) {
     try { fs.unlinkSync(archivePath); } catch { /* ignore */ }
   }
