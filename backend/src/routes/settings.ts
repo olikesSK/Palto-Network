@@ -9,7 +9,7 @@ const PUBLIC_KEYS = ['panel_name', 'panel_description', 'panel_color'];
 
 // GET /api/settings
 router.get('/', authenticate, (req: AuthRequest, res: Response) => {
-  const isAdmin = req.user!.role === 'admin';
+  const isAdmin = req.user!.role === 'zakladatel';
   const rows = db.prepare("SELECT key, value FROM panel_settings").all() as { key: string; value: string }[];
   const settings = Object.fromEntries(rows.map(r => [r.key, r.value]));
 

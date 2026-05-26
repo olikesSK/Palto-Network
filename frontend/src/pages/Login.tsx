@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
+import { useSettingsStore } from '../store/settings';
 import { useI18n } from '../hooks/useI18n';
 
 export default function Login() {
@@ -10,6 +11,7 @@ export default function Login() {
   const login = useAuthStore(s => s.login);
   const navigate = useNavigate();
   const { t } = useI18n();
+  const { settings } = useSettingsStore();
   const [form, setForm] = useState({ username: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -86,7 +88,7 @@ export default function Login() {
               >
                 <Sparkles size={28} className="text-white" />
               </motion.div>
-              <h1 className="text-2xl font-bold gradient-text">Palto-Network</h1>
+              <h1 className="text-2xl font-bold gradient-text">{settings.panel_name}</h1>
               <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.45)' }}>Game Server Panel</p>
             </div>
 

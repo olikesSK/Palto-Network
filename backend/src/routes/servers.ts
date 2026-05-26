@@ -11,8 +11,8 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', (req: AuthRequest, res: Response) => {
-  const isAdmin = req.user!.role === 'admin';
-  const isHelper = req.user!.role === 'helper';
+  const isAdmin = req.user!.role === 'zakladatel';
+  const isHelper = req.user!.role === 'spravca';
 
   let servers: any[];
   if (isAdmin || isHelper) {
@@ -52,8 +52,8 @@ router.get('/:id', (req: AuthRequest, res: Response) => {
 
   if (!server) return res.status(404).json({ error: 'Server not found' });
 
-  const isAdmin = req.user!.role === 'admin';
-  const isHelper = req.user!.role === 'helper';
+  const isAdmin = req.user!.role === 'zakladatel';
+  const isHelper = req.user!.role === 'spravca';
   const isOwner = server.owner_id === req.user!.id;
   const isSubuser = !!db.prepare('SELECT id FROM server_subusers WHERE server_id = ? AND user_id = ?').get(req.params.id, req.user!.id);
 
@@ -104,7 +104,7 @@ router.patch('/:id/power', async (req: AuthRequest, res: Response) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id) as any;
   if (!server) return res.status(404).json({ error: 'Server not found' });
 
-  const isAdmin = req.user!.role === 'admin';
+  const isAdmin = req.user!.role === 'zakladatel';
   const isOwner = server.owner_id === req.user!.id;
   const subuser = db.prepare('SELECT permissions FROM server_subusers WHERE server_id = ? AND user_id = ?').get(req.params.id, req.user!.id) as any;
   const hasPowerPerm = subuser && JSON.parse(subuser.permissions).power;
@@ -169,7 +169,7 @@ router.patch('/:id/power', async (req: AuthRequest, res: Response) => {
 router.put('/:id', (req: AuthRequest, res: Response) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id) as any;
   if (!server) return res.status(404).json({ error: 'Server not found' });
-  if (req.user!.role !== 'admin' && server.owner_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
+  if (req.user!.role !== 'zakladatel' && server.owner_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
 
   const { name, description, memory, disk, cpu } = req.body;
   db.prepare('UPDATE servers SET name=COALESCE(?,name), description=COALESCE(?,description), memory=COALESCE(?,memory), disk=COALESCE(?,disk), cpu=COALESCE(?,cpu) WHERE id=?')
@@ -264,7 +264,7 @@ router.post('/:id/reinstall', (req: AuthRequest, res: Response) => {
     SELECT s.*, e.name as egg_name FROM servers s JOIN eggs e ON s.egg_id = e.id WHERE s.id = ?
   `).get(req.params.id) as { owner_id: string; name: string; egg_name: string } | undefined;
   if (!server) return res.status(404).json({ error: 'Server not found' });
-  if (req.user!.role !== 'admin' && server.owner_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
+  if (req.user!.role !== 'zakladatel' && server.owner_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
 
   if (processManager.isRunning(req.params.id)) {
     processManager.stopServer(req.params.id, true);

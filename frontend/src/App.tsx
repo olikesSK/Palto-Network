@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Login from './pages/Login';
+import { useSettingsStore } from './store/settings';
 import Dashboard from './pages/Dashboard';
 import Servers from './pages/Servers';
 import ServerDetail from './pages/ServerDetail';
@@ -18,6 +20,9 @@ import StatusPage from './pages/StatusPage';
 import DiscordBot from './pages/DiscordBot';
 
 export default function App() {
+  const { load } = useSettingsStore();
+  useEffect(() => { load(); }, [load]);
+
   return (
     <BrowserRouter>
       <Routes>

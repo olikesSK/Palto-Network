@@ -10,7 +10,7 @@ router.use(authenticate);
 router.get('/', (req: AuthRequest, res: Response) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id) as any;
   if (!server) return res.status(404).json({ error: 'Server not found' });
-  if (req.user!.role !== 'admin' && server.owner_id !== req.user!.id) {
+  if (req.user!.role !== 'zakladatel' && server.owner_id !== req.user!.id) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
@@ -29,7 +29,7 @@ router.get('/', (req: AuthRequest, res: Response) => {
 router.post('/', (req: AuthRequest, res: Response) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id) as any;
   if (!server) return res.status(404).json({ error: 'Server not found' });
-  if (req.user!.role !== 'admin' && server.owner_id !== req.user!.id) {
+  if (req.user!.role !== 'zakladatel' && server.owner_id !== req.user!.id) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
@@ -63,7 +63,7 @@ router.post('/', (req: AuthRequest, res: Response) => {
 router.patch('/:userId', (req: AuthRequest, res: Response) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id) as any;
   if (!server) return res.status(404).json({ error: 'Server not found' });
-  if (req.user!.role !== 'admin' && server.owner_id !== req.user!.id) {
+  if (req.user!.role !== 'zakladatel' && server.owner_id !== req.user!.id) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
@@ -88,7 +88,7 @@ router.patch('/:userId', (req: AuthRequest, res: Response) => {
 router.delete('/:userId', (req: AuthRequest, res: Response) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id) as any;
   if (!server) return res.status(404).json({ error: 'Server not found' });
-  if (req.user!.role !== 'admin' && server.owner_id !== req.user!.id) {
+  if (req.user!.role !== 'zakladatel' && server.owner_id !== req.user!.id) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 

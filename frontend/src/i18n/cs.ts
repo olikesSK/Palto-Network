@@ -190,7 +190,7 @@ const cs: Record<string, string> = {
   'webhooks.creating': 'Vytváření...',
 
   // Chat
-  'chat.title': 'Wizz-Chat',
+  'chat.title': 'Palto-Network Chat',
   'chat.global': 'Global',
   'chat.support': 'Podpora',
   'chat.online': 'online',
