@@ -1,9 +1,15 @@
 import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import * as cron from 'node-cron';
+import type { ScheduledTask } from 'node-cron';
 import { db } from '../db/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import * as processManager from '../services/process';
 
 const router = Router({ mergeParams: true });
+
+// Map of scheduleId → cron task
+const cronTasks = new Map<string, ScheduledTask>();
 
 function checkAccess(req: AuthRequest, serverId: string): boolean {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId) as { owner_id: string } | undefined;
@@ -12,12 +18,15 @@ function checkAccess(req: AuthRequest, serverId: string): boolean {
   return server.owner_id === req.user!.id;
 }
 
+function buildCronExpression(minute: string, hour: string, dayMonth: string, month: string, dayWeek: string): string {
+  return `${minute} ${hour} ${dayMonth} ${month} ${dayWeek}`;
+}
+
 function calculateNextRun(minute: string, hour: string, dayMonth: string, month: string, dayWeek: string): string {
   const now = new Date();
   const next = new Date(now);
   next.setSeconds(0, 0);
 
-  // Simple calculation - advance by period
   const m = minute === '*' ? 0 : parseInt(minute) || 0;
   const h = hour === '*' ? now.getHours() : parseInt(hour) || 0;
 
@@ -31,18 +40,85 @@ function calculateNextRun(minute: string, hour: string, dayMonth: string, month:
     next.setMinutes(now.getMinutes() + 1, 0, 0);
   }
 
-  // Handle day of week
   if (dayWeek !== '*') {
     const targetDay = parseInt(dayWeek);
-    while (next.getDay() !== targetDay) {
-      next.setDate(next.getDate() + 1);
-    }
+    while (next.getDay() !== targetDay) next.setDate(next.getDate() + 1);
   }
 
-  // Suppress unused variable warnings
   void dayMonth; void month;
-
   return next.toISOString();
+}
+
+function executeScheduleAction(schedule: {
+  id: string; server_id: string; action: string; payload: string;
+}) {
+  const server = db.prepare("SELECT status FROM servers WHERE id = ?").get(schedule.server_id) as { status: string } | undefined;
+
+  switch (schedule.action) {
+    case 'command':
+      if (processManager.isRunning(schedule.server_id)) {
+        processManager.sendCommand(schedule.server_id, schedule.payload);
+      }
+      break;
+    case 'power_start':
+      if (!processManager.isRunning(schedule.server_id)) {
+        processManager.startServer(schedule.server_id);
+      }
+      break;
+    case 'power_stop':
+      if (processManager.isRunning(schedule.server_id)) {
+        processManager.stopServer(schedule.server_id, false);
+      }
+      break;
+    case 'power_restart':
+      if (processManager.isRunning(schedule.server_id)) {
+        processManager.stopServer(schedule.server_id, false);
+        setTimeout(() => processManager.startServer(schedule.server_id), 3000);
+      }
+      break;
+    default:
+      break;
+  }
+
+  void server;
+
+  // Update last_run and next_run in DB
+  const sched = db.prepare("SELECT * FROM schedules WHERE id = ?").get(schedule.id) as any;
+  if (sched) {
+    const next = calculateNextRun(sched.cron_minute, sched.cron_hour, sched.cron_day_month, sched.cron_month, sched.cron_day_week);
+    db.prepare("UPDATE schedules SET last_run = datetime('now'), next_run = ? WHERE id = ?").run(next, schedule.id);
+  }
+}
+
+function registerCronTask(schedule: {
+  id: string; server_id: string; action: string; payload: string;
+  cron_minute: string; cron_hour: string; cron_day_month: string; cron_month: string; cron_day_week: string;
+  enabled: number;
+}) {
+  // Cancel existing task for this schedule
+  const existing = cronTasks.get(schedule.id);
+  if (existing) { existing.stop(); cronTasks.delete(schedule.id); }
+
+  if (!schedule.enabled) return;
+
+  const expression = buildCronExpression(
+    schedule.cron_minute, schedule.cron_hour,
+    schedule.cron_day_month, schedule.cron_month, schedule.cron_day_week
+  );
+
+  if (!cron.validate(expression)) return;
+
+  const task = cron.schedule(expression, () => {
+    executeScheduleAction(schedule);
+  }, { timezone: 'UTC' });
+
+  cronTasks.set(schedule.id, task);
+}
+
+// Boot: restore all enabled schedules from DB
+export function restoreSchedules() {
+  const schedules = db.prepare("SELECT * FROM schedules WHERE enabled = 1").all() as any[];
+  schedules.forEach(s => registerCronTask(s));
 }
 
 // GET /api/servers/:id/schedules
@@ -56,8 +132,16 @@ router.get('/:id/schedules', authenticate, (req: AuthRequest, res: Response) => 
 router.post('/:id/schedules', authenticate, (req: AuthRequest, res: Response) => {
   if (!checkAccess(req, req.params.id)) return res.status(403).json({ error: 'Forbidden' });
 
-  const { name, cron_minute = '0', cron_hour = '4', cron_day_month = '*', cron_month = '*', cron_day_week = '*', action = 'command', payload = '' } = req.body;
+  const {
+    name,
+    cron_minute = '0', cron_hour = '4', cron_day_month = '*',
+    cron_month = '*', cron_day_week = '*',
+    action = 'command', payload = ''
+  } = req.body;
   if (!name) return res.status(400).json({ error: 'name required' });
+
+  const expression = buildCronExpression(cron_minute, cron_hour, cron_day_month, cron_month, cron_day_week);
+  if (!cron.validate(expression)) return res.status(400).json({ error: 'Invalid cron expression' });
 
   const id = uuidv4();
   const next_run = calculateNextRun(cron_minute, cron_hour, cron_day_month, cron_month, cron_day_week);
@@ -66,7 +150,10 @@ router.post('/:id/schedules', authenticate, (req: AuthRequest, res: Response) =>
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .run(id, req.params.id, name, cron_minute, cron_hour, cron_day_month, cron_month, cron_day_week, action, payload, next_run);
 
-  res.status(201).json(db.prepare("SELECT * FROM schedules WHERE id = ?").get(id));
+  const sched = db.prepare("SELECT * FROM schedules WHERE id = ?").get(id) as any;
+  registerCronTask(sched);
+
+  res.status(201).json(sched);
 });
 
 // PATCH /api/servers/:id/schedules/:schedId
@@ -96,12 +183,19 @@ router.patch('/:id/schedules/:schedId', authenticate, (req: AuthRequest, res: Re
     db.prepare(`UPDATE schedules SET ${updates.join(', ')} WHERE id = ?`).run(...values);
   }
 
-  res.json(db.prepare("SELECT * FROM schedules WHERE id = ?").get(req.params.schedId));
+  const updated = db.prepare("SELECT * FROM schedules WHERE id = ?").get(req.params.schedId) as any;
+  registerCronTask(updated);
+
+  res.json(updated);
 });
 
 // DELETE /api/servers/:id/schedules/:schedId
 router.delete('/:id/schedules/:schedId', authenticate, (req: AuthRequest, res: Response) => {
   if (!checkAccess(req, req.params.id)) return res.status(403).json({ error: 'Forbidden' });
+
+  const existing = cronTasks.get(req.params.schedId);
+  if (existing) { existing.stop(); cronTasks.delete(req.params.schedId); }
+
   db.prepare("DELETE FROM schedules WHERE id = ? AND server_id = ?").run(req.params.schedId, req.params.id);
   res.json({ success: true });
 });

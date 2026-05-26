@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import rateLimit from 'express-rate-limit';
 import { initDatabase, db } from './db/database';
 import authRoutes from './routes/auth';
 import serverRoutes from './routes/servers';
@@ -21,6 +22,8 @@ import announcementsRoutes from './routes/announcements';
 import settingsRoutes from './routes/settings';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from './middleware/auth';
+import * as processManager from './services/process';
+import { restoreSchedules } from './routes/schedules';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -29,9 +32,33 @@ const io = new SocketIOServer(httpServer, {
 });
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+
+// Rate limiting
+const authLimiter = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+const apiLimiter = rateLimit({ windowMs: 60_000, max: 200, standardHeaders: true, legacyHeaders: false });
+
+app.use('/api/auth/login', authLimiter);
+app.use('/api', apiLimiter);
 
 initDatabase();
+
+// Create server_stats table if not present
+try {
+  db.exec(`CREATE TABLE IF NOT EXISTS server_stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    server_id TEXT NOT NULL,
+    cpu REAL NOT NULL DEFAULT 0,
+    memory REAL NOT NULL DEFAULT 0,
+    timestamp TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_server_stats_server_id ON server_stats (server_id)`);
+} catch { /* ignore */ }
+
+// Wire process manager console output to Socket.io
+processManager.setIoEmitter((serverId, line, type) => {
+  io.to(`console:${serverId}`).emit('console:output', { serverId, line, type });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/servers', serverRoutes);
@@ -41,7 +68,6 @@ app.use('/api/nodes', nodeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/webhooks', webhookRoutes);
 
-// New routes
 app.use('/api/servers', filesRoutes);
 app.use('/api/servers', backupsRoutes);
 app.use('/api/servers', schedulesRoutes);
@@ -62,7 +88,6 @@ app.get('/api/stats', (_req, res) => {
   res.json({ totalServers, runningServers, totalUsers, totalNodes, onlineNodes });
 });
 
-// Public status endpoint
 app.get('/api/status', (_req, res) => {
   const nodes = db.prepare("SELECT id, name, fqdn, status FROM nodes").all() as { id: string; name: string; fqdn: string; status: string }[];
   const servers = db.prepare("SELECT id, name, status, node_id FROM servers").all() as { id: string; name: string; status: string; node_id: string }[];
@@ -83,7 +108,11 @@ app.get('/api/status', (_req, res) => {
   });
 });
 
-const consoleSessions = new Map<string, NodeJS.Timeout>();
+// 404 handler for unmatched API routes
+app.use('/api/*', (_req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
 const onlineUsers = new Map<string, { id: string; username: string; role: string; socketId: string }>();
 
 io.on('connection', (socket) => {
@@ -97,19 +126,12 @@ io.on('connection', (socket) => {
     return;
   }
 
-  // Track online users
   onlineUsers.set(socket.id, { id: user.id, username: user.username, role: user.role, socketId: socket.id });
   io.emit('chat:online', Array.from(onlineUsers.values()));
 
   socket.on('disconnect', () => {
     onlineUsers.delete(socket.id);
     io.emit('chat:online', Array.from(onlineUsers.values()));
-    consoleSessions.forEach((interval, key) => {
-      if (key.startsWith(socket.id)) {
-        clearInterval(interval);
-        consoleSessions.delete(key);
-      }
-    });
   });
 
   // Chat events
@@ -147,46 +169,39 @@ io.on('connection', (socket) => {
 
     socket.join(`console:${serverId}`);
 
-    const logs = db.prepare('SELECT * FROM server_logs WHERE server_id = ? ORDER BY timestamp DESC LIMIT 50').all(serverId);
+    // Send recent log history
+    const logs = db.prepare('SELECT * FROM server_logs WHERE server_id = ? ORDER BY timestamp DESC LIMIT 100').all(serverId);
     (logs as { message: string; type: string }[]).reverse().forEach((log) => {
       socket.emit('console:output', { serverId, line: log.message, type: log.type });
     });
+  });
 
-    if (server.status === 'running') {
-      const interval = setInterval(() => {
-        const lines = [
-          `[${new Date().toTimeString().slice(0, 8)}] [Server thread/INFO]: ${['Tick processing', 'Saving chunks', 'Player activity', 'Memory GC', 'World tick'][Math.floor(Math.random() * 5)]}`,
-          `[${new Date().toTimeString().slice(0, 8)}] [Server thread/INFO]: Server is running at ${Math.floor(Math.random() * 5) + 18} TPS`,
-        ];
-        const line = lines[Math.floor(Math.random() * lines.length)];
-        io.to(`console:${serverId}`).emit('console:output', { serverId, line, type: 'output' });
-        db.prepare('INSERT INTO server_logs (server_id, message, type) VALUES (?, ?, ?)').run(serverId, line, 'output');
-      }, 3000 + Math.random() * 4000);
-
-      consoleSessions.set(socket.id + serverId, interval);
-      socket.on('console:detach', () => {
-        clearInterval(interval);
-        consoleSessions.delete(socket.id + serverId);
-      });
-    }
+  socket.on('console:detach', (serverId: string) => {
+    socket.leave(`console:${serverId}`);
   });
 
   socket.on('console:command', (data: { serverId: string; command: string }) => {
-    const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(data.serverId) as { status: string } | undefined;
+    const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(data.serverId) as { status: string; owner_id: string } | undefined;
     if (!server || server.status !== 'running') return;
+
+    // Check permissions
+    if (user!.role !== 'admin' && user!.role !== 'helper' && server.owner_id !== user!.id) {
+      const sub = db.prepare('SELECT permissions FROM server_subusers WHERE server_id = ? AND user_id = ?').get(data.serverId, user!.id) as { permissions: string } | undefined;
+      if (!sub || !JSON.parse(sub.permissions).console) return;
+    }
 
     const line = `> ${data.command}`;
     io.to(`console:${data.serverId}`).emit('console:output', { serverId: data.serverId, line, type: 'command' });
     db.prepare('INSERT INTO server_logs (server_id, message, type) VALUES (?, ?, ?)').run(data.serverId, line, 'command');
 
-    setTimeout(() => {
-      const response = `[${new Date().toTimeString().slice(0, 8)}] [Server thread/INFO]: Command executed: ${data.command}`;
-      io.to(`console:${data.serverId}`).emit('console:output', { serverId: data.serverId, line: response, type: 'output' });
-      db.prepare('INSERT INTO server_logs (server_id, message, type) VALUES (?, ?, ?)').run(data.serverId, response, 'output');
-    }, 300);
+    // Send to real process stdin
+    const sent = processManager.sendCommand(data.serverId, data.command);
+    if (!sent) {
+      const errLine = '[Console] Server process is not running';
+      io.to(`console:${data.serverId}`).emit('console:output', { serverId: data.serverId, line: errLine, type: 'error' });
+    }
   });
 
-  // Announcements broadcast
   socket.on('announcement:create', (announcement: unknown) => {
     if (user!.role === 'admin') {
       io.emit('announcement:new', announcement);
@@ -194,10 +209,11 @@ io.on('connection', (socket) => {
   });
 });
 
-// Export io for use in routes
 export { io };
 
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
   console.log(`Wizz-Craft backend running on port ${PORT}`);
+  // Restore scheduled tasks from DB
+  restoreSchedules();
 });
