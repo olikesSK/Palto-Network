@@ -19,7 +19,7 @@ export default function Header() {
     '/webhooks': t('nav.discord'),
   };
 
-  const title = Object.entries(titles).find(([k]) => location.pathname.startsWith(k))?.[1] ?? 'Wizz-Craft';
+  const title = Object.entries(titles).find(([k]) => location.pathname.startsWith(k))?.[1] ?? 'Palto-Network';
 
   return (
     <header

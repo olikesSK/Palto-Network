@@ -96,7 +96,7 @@ app.get('/api/status', (_req, res) => {
   const onlineNodes = nodes.filter(n => n.status === 'online').length;
 
   res.json({
-    panel: 'Wizz-Craft',
+    panel: 'Palto-Network',
     status: onlineNodes === nodes.length ? 'operational' : onlineNodes > 0 ? 'degraded' : 'outage',
     nodes: nodes.map(n => ({
       ...n,
@@ -213,7 +213,7 @@ export { io };
 
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
-  console.log(`Wizz-Craft backend running on port ${PORT}`);
+  console.log(`Palto-Network backend running on port ${PORT}`);
   // Restore scheduled tasks from DB
   restoreSchedules();
 });

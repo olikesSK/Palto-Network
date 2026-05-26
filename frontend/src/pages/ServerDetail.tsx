@@ -28,7 +28,7 @@ interface PermissionSet {
   settings: boolean;
 }
 
-const PLAYER_NAMES = ['Steve', 'Alex', 'Notch', 'Herobrine', 'Creeper', 'Enderman', 'WizzCraft', 'ProGamer', 'DiamondKing', 'SkyWatcher'];
+const PLAYER_NAMES = ['Steve', 'Alex', 'Notch', 'Herobrine', 'Creeper', 'Enderman', 'PaltoPlayer', 'ProGamer', 'DiamondKing', 'SkyWatcher'];
 
 function generatePlayers(count: number) {
   return Array.from({ length: count }, (_, i) => ({

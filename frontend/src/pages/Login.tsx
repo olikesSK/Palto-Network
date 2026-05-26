@@ -86,7 +86,7 @@ export default function Login() {
               >
                 <Sparkles size={28} className="text-white" />
               </motion.div>
-              <h1 className="text-2xl font-bold gradient-text">Wizz-Craft</h1>
+              <h1 className="text-2xl font-bold gradient-text">Palto-Network</h1>
               <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.45)' }}>Game Server Panel</p>
             </div>
 

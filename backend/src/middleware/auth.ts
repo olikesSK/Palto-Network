@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { db } from '../db/database';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'wizz-craft-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'palto-network-secret-key-2024';
 
 export interface AuthRequest extends Request {
   user?: { id: string; role: string; username: string };

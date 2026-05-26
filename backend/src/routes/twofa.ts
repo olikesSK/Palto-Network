@@ -12,7 +12,7 @@ const tempTokens = new Map<string, { userId: string; expires: number }>();
 
 // GET /api/auth/2fa/setup
 router.get('/2fa/setup', authenticate, async (req: AuthRequest, res: Response) => {
-  const secret = speakeasy.generateSecret({ name: `Wizz-Craft:${req.user!.username}`, length: 20 });
+  const secret = speakeasy.generateSecret({ name: `Palto-Network:${req.user!.username}`, length: 20 });
   const qrUrl = await QRCode.toDataURL(secret.otpauth_url!);
   res.json({ secret: secret.base32, qrUrl });
 });

@@ -19,14 +19,14 @@ interface PanelSettingsData {
 export default function PanelSettings() {
   const { t } = useI18n();
   const [settings, setSettings] = useState<PanelSettingsData>({
-    panel_name: 'Wizz-Craft',
+    panel_name: 'Palto-Network',
     panel_description: 'Herní server panel',
     panel_color: '#7c3aed',
     smtp_host: '',
     smtp_port: '587',
     smtp_user: '',
     smtp_pass: '',
-    smtp_from: 'noreply@wizz-craft.io',
+    smtp_from: 'noreply@palto-network.io',
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -190,7 +190,7 @@ export default function PanelSettings() {
             <label className="block text-xs mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>E-mail odesílatele</label>
             <input
               className="glass-input w-full px-3 py-2.5 text-sm"
-              placeholder="noreply@wizz-craft.io"
+              placeholder="noreply@palto-network.io"
               value={settings.smtp_from}
               onChange={e => up('smtp_from', e.target.value)}
             />

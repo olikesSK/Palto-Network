@@ -29,7 +29,7 @@ export function fireWebhook(event: string, data: Record<string, string>) {
         color: colors[event] || 0x6366f1,
         fields: Object.entries(data).map(([name, value]) => ({ name, value, inline: true })),
         timestamp: new Date().toISOString(),
-        footer: { text: 'Wizz-Craft Panel' }
+        footer: { text: 'Palto-Network Panel' }
       }]
     });
 

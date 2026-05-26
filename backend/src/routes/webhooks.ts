@@ -53,7 +53,7 @@ router.post('/:id/test', (req: AuthRequest, res: Response) => {
   const wh = db.prepare('SELECT * FROM discord_webhooks WHERE id = ?').get(req.params.id) as any;
   if (!wh) return res.status(404).json({ error: 'Webhook not found' });
 
-  fireWebhook('server.start', { Server: 'Test Server', Status: 'Test event from Wizz-Craft Panel' });
+  fireWebhook('server.start', { Server: 'Test Server', Status: 'Test event from Palto-Network Panel' });
   res.json({ success: true, message: 'Test webhook sent' });
 });
 

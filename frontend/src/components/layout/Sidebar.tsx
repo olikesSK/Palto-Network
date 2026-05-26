@@ -43,7 +43,7 @@ export default function Sidebar() {
           <Sparkles size={18} className="text-white" />
         </div>
         <div>
-          <div className="font-bold text-[15px] text-white leading-tight">Wizz-Craft</div>
+          <div className="font-bold text-[15px] text-white leading-tight">Palto-Network</div>
           <div className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Game Panel</div>
         </div>
       </div>

@@ -11,7 +11,7 @@ sleep 0.5
 echo "Loading plugins..."
 sleep 1
 echo "Server is ready. Hosting on port ${SERVER_PORT:-28015}"
-echo "Server Name: ${SERVER_NAME:-Wizz-Craft Rust}"
+echo "Server Name: ${SERVER_NAME:-Palto-Network Rust}"
 
 background() {
   local msgs=(

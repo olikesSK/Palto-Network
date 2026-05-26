@@ -1,5 +1,5 @@
 {
-  "name": "wizz-craft",
+  "name": "palto-network",
   "version": "1.0.0",
   "private": true,
   "workspaces": ["frontend", "backend"],

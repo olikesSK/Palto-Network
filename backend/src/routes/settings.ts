@@ -35,7 +35,7 @@ router.post('/test-email', authenticate, requireAdmin, async (req: AuthRequest, 
   try {
     await sendEmail(
       req.user!.username + '@test.com',
-      'Test e-mail z Wizz-Craft',
+      'Test e-mail z Palto-Network',
       '<h1>Test e-mail</h1><p>SMTP konfigurace funguje správně!</p>'
     );
     res.json({ success: true });

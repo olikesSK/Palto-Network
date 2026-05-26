@@ -100,7 +100,7 @@ export default function StatusPage() {
               <Sparkles size={22} className="text-white" />
             </div>
             <div className="text-left">
-              <h1 className="text-3xl font-bold text-white">Wizz-Craft</h1>
+              <h1 className="text-3xl font-bold text-white">Palto-Network</h1>
               <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Status Page</p>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function StatusPage() {
               className="text-center text-xs mt-10"
               style={{ color: 'rgba(255,255,255,0.25)' }}
             >
-              Wizz-Craft Game Panel • Auto-refresh každých 30 sekund
+              Palto-Network Game Panel • Auto-refresh každých 30 sekund
             </motion.p>
           </>
         )}

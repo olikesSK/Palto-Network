@@ -28,7 +28,7 @@ while IFS= read -r cmd; do
       echo "Server shutdown requested. Goodbye."
       exit 0 ;;
     status)
-      echo "hostname: ${SERVER_NAME:-Wizz-Craft CS2}"
+      echo "hostname: ${SERVER_NAME:-Palto-Network CS2}"
       echo "players : 0 (10 max) (0 bots) (0 humans)"
       echo "map     : de_dust2" ;;
     "")  ;;

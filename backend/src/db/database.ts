@@ -3,7 +3,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 
-const DB_PATH = path.join(__dirname, '../../data/wizz-craft.db');
+const DB_PATH = path.join(__dirname, '../../data/palto-network.db');
 
 import fs from 'fs';
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -208,7 +208,7 @@ function seedServerFiles(serverId: string, eggName: string) {
   if (eggName.includes('Minecraft') || eggName.includes('minecraft')) {
     files.push(
       { path: '/', content: '', is_dir: 1 },
-      { path: '/server.properties', content: `server-port=25565\nmax-players=20\nmotd=Wizz-Craft Server\ngamemode=survival\ndifficulty=normal\nspawn-protection=16\nonline-mode=true\nlevel-name=world\n`, is_dir: 0 },
+      { path: '/server.properties', content: `server-port=25565\nmax-players=20\nmotd=Palto-Network Server\ngamemode=survival\ndifficulty=normal\nspawn-protection=16\nonline-mode=true\nlevel-name=world\n`, is_dir: 0 },
       { path: '/ops.json', content: '[]', is_dir: 0 },
       { path: '/whitelist.json', content: '[]', is_dir: 0 },
       { path: '/banned-players.json', content: '[]', is_dir: 0 },
@@ -220,7 +220,7 @@ function seedServerFiles(serverId: string, eggName: string) {
   } else if (eggName.includes('Rust')) {
     files.push(
       { path: '/', content: '', is_dir: 1 },
-      { path: '/server.cfg', content: `server.hostname "Wizz-Craft Rust"\nserver.maxplayers 100\nserver.description "Powered by Wizz-Craft"\n`, is_dir: 0 },
+      { path: '/server.cfg', content: `server.hostname "Palto-Network Rust"\nserver.maxplayers 100\nserver.description "Powered by Palto-Network"\n`, is_dir: 0 },
       { path: '/oxide/', content: '', is_dir: 1 },
       { path: '/oxide/config/', content: '', is_dir: 1 },
       { path: '/saves/', content: '', is_dir: 1 },
@@ -229,7 +229,7 @@ function seedServerFiles(serverId: string, eggName: string) {
     files.push(
       { path: '/', content: '', is_dir: 1 },
       { path: '/game/cfg/', content: '', is_dir: 1 },
-      { path: '/game/cfg/server.cfg', content: `hostname "Wizz-Craft CS2"\nrcon_password "changeme"\nmp_autoteambalance 1\nmp_maxrounds 30\n`, is_dir: 0 },
+      { path: '/game/cfg/server.cfg', content: `hostname "Palto-Network CS2"\nrcon_password "changeme"\nmp_autoteambalance 1\nmp_maxrounds 30\n`, is_dir: 0 },
     );
   } else {
     files.push(
@@ -249,7 +249,7 @@ function seedData() {
     const adminId = uuidv4();
     const passwordHash = bcrypt.hashSync('admin123', 10);
     db.prepare(`INSERT INTO users (id, username, email, password_hash, role) VALUES (?, ?, ?, ?, ?)`)
-      .run(adminId, 'admin', 'admin@wizz-craft.io', passwordHash, 'admin');
+      .run(adminId, 'admin', 'admin@palto-network.io', passwordHash, 'admin');
 
     const userId = uuidv4();
     const userHash = bcrypt.hashSync('user123', 10);
@@ -259,15 +259,15 @@ function seedData() {
     const helperId = uuidv4();
     const helperHash = bcrypt.hashSync('helper123', 10);
     db.prepare(`INSERT INTO users (id, username, email, password_hash, role) VALUES (?, ?, ?, ?, ?)`)
-      .run(helperId, 'helper1', 'helper@wizz-craft.io', helperHash, 'helper');
+      .run(helperId, 'helper1', 'helper@palto-network.io', helperHash, 'helper');
 
     const nodeId = uuidv4();
     db.prepare(`INSERT INTO nodes (id, name, fqdn, port, memory, disk, cpu) VALUES (?, ?, ?, ?, ?, ?, ?)`)
-      .run(nodeId, 'Node EU-1', 'node1.wizz-craft.io', 8080, 32768, 512000, 800);
+      .run(nodeId, 'Node EU-1', 'node1.palto-network.io', 8080, 32768, 512000, 800);
 
     const node2Id = uuidv4();
     db.prepare(`INSERT INTO nodes (id, name, fqdn, port, memory, disk, cpu) VALUES (?, ?, ?, ?, ?, ?, ?)`)
-      .run(node2Id, 'Node US-1', 'node2.wizz-craft.io', 8080, 16384, 256000, 400);
+      .run(node2Id, 'Node US-1', 'node2.palto-network.io', 8080, 16384, 256000, 400);
 
     seedEggs(adminId, nodeId, userId);
   }
@@ -276,14 +276,14 @@ function seedData() {
   const brandingExists = db.prepare("SELECT key FROM panel_settings WHERE key = 'panel_name'").get();
   if (!brandingExists) {
     const defaults: [string, string][] = [
-      ['panel_name', 'Wizz-Craft'],
+      ['panel_name', 'Palto-Network'],
       ['panel_description', 'Herní server panel'],
       ['panel_color', '#7c3aed'],
       ['smtp_host', ''],
       ['smtp_port', '587'],
       ['smtp_user', ''],
       ['smtp_pass', ''],
-      ['smtp_from', 'noreply@wizz-craft.io'],
+      ['smtp_from', 'noreply@palto-network.io'],
     ];
     const ins = db.prepare("INSERT OR IGNORE INTO panel_settings (key, value) VALUES (?, ?)");
     defaults.forEach(([k, v]) => ins.run(k, v));
@@ -330,7 +330,7 @@ function seedEggs(adminId: string, _nodeId: string, _userId: string) {
       startup: './RustDedicated -batchmode +server.port {{SERVER_PORT}} +server.hostname "{{HOSTNAME}}"',
       config_stop: 'quit',
       variables: JSON.stringify([
-        { name: 'HOSTNAME', description: 'Server hostname', default: 'Wizz-Craft Rust', required: true },
+        { name: 'HOSTNAME', description: 'Server hostname', default: 'Palto-Network Rust', required: true },
         { name: 'MAX_PLAYERS', description: 'Maximum players', default: '100', required: false },
         { name: 'MAP_SEED', description: 'World seed', default: '12345', required: false }
       ]),
@@ -377,7 +377,7 @@ function seedEggs(adminId: string, _nodeId: string, _userId: string) {
       config_stop: 'saveworld',
       variables: JSON.stringify([
         { name: 'MAP', description: 'Map name', default: 'TheIsland', required: true },
-        { name: 'SESSION_NAME', description: 'Session name', default: 'Wizz-Craft ARK', required: false }
+        { name: 'SESSION_NAME', description: 'Session name', default: 'Palto-Network ARK', required: false }
       ]),
       icon: 'dinosaur',
       color: '#a855f7'

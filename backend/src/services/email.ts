@@ -15,7 +15,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
       port: parseInt(s.smtp_port) || 587,
       auth: s.smtp_user ? { user: s.smtp_user, pass: s.smtp_pass } : undefined,
     });
-    await transporter.sendMail({ from: s.smtp_from || 'noreply@wizz-craft.io', to, subject, html });
+    await transporter.sendMail({ from: s.smtp_from || 'noreply@palto-network.io', to, subject, html });
   } catch (e) {
     console.error('Email error:', e);
   }
