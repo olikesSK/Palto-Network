@@ -1,23 +1,24 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Crown, Shield, User } from 'lucide-react';
+import { MessageCircle, X, Send, Crown, Shield } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/auth';
+import { useSettingsStore } from '../../store/settings';
 import { ChatMessage, OnlineUser } from '../../types';
 import { useI18n } from '../../hooks/useI18n';
 
 type Channel = 'global' | 'support';
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: '#a78bfa',
-  helper: '#f59e0b',
+  zakladatel: '#a78bfa',
+  spravca: '#f59e0b',
   user: '#94a3b8',
 };
 
 function RoleBadge({ role }: { role: string }) {
-  if (role === 'admin') return <Crown size={11} style={{ color: '#a78bfa' }} />;
-  if (role === 'helper') return <Shield size={11} style={{ color: '#f59e0b' }} />;
-  return <User size={11} style={{ color: '#94a3b8' }} />;
+  if (role === 'zakladatel') return <Crown size={11} style={{ color: '#a78bfa' }} />;
+  if (role === 'spravca') return <Shield size={11} style={{ color: '#f59e0b' }} />;
+  return null;
 }
 
 function formatTime(ts: string) {
@@ -31,6 +32,8 @@ function formatTime(ts: string) {
 export default function ChatWidget() {
   const { user } = useAuthStore();
   const { t } = useI18n();
+  const { settings } = useSettingsStore();
+  const panelName = settings.panel_name;
   const [open, setOpen] = useState(false);
   const [channel, setChannel] = useState<Channel>('global');
   const [messages, setMessages] = useState<Record<Channel, ChatMessage[]>>({ global: [], support: [] });
@@ -171,7 +174,7 @@ export default function ChatWidget() {
               >
                 <div className="flex items-center gap-2">
                   <MessageCircle size={16} style={{ color: '#a78bfa' }} />
-                  <span className="font-semibold text-white text-sm">💬 {t('chat.title')}</span>
+                  <span className="font-semibold text-white text-sm">💬 {panelName} Chat</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5">

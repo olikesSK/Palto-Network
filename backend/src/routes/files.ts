@@ -23,7 +23,7 @@ function safePath(base: string, reqPath: string): string | null {
 function checkAccess(req: AuthRequest, serverId: string): boolean {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId) as { owner_id: string } | undefined;
   if (!server) return false;
-  if (req.user!.role === 'admin' || req.user!.role === 'helper') return true;
+  if (req.user!.role === 'zakladatel' || req.user!.role === 'spravca') return true;
   if (server.owner_id === req.user!.id) return true;
   const subuser = db.prepare('SELECT permissions FROM server_subusers WHERE server_id = ? AND user_id = ?').get(serverId, req.user!.id) as { permissions: string } | undefined;
   if (subuser) {

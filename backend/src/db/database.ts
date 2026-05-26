@@ -411,6 +411,10 @@ export function initDatabase() {
   try { db.exec("ALTER TABLE users ADD COLUMN email_notifications INTEGER NOT NULL DEFAULT 1"); } catch {}
   try { db.exec("ALTER TABLE servers ADD COLUMN container_id TEXT"); } catch {}
 
+  // Role migrations: rename old roles to new Slovak names
+  try { db.exec("UPDATE users SET role = 'zakladatel' WHERE role = 'admin'"); } catch {}
+  try { db.exec("UPDATE users SET role = 'user' WHERE role = 'helper'"); } catch {}
+
   seedData();
 }
 
@@ -456,12 +460,12 @@ function seedServerFiles(serverId: string, eggName: string) {
 }
 
 function seedData() {
-  const adminExists = db.prepare('SELECT id FROM users WHERE role = ?').get('admin');
+  const adminExists = db.prepare("SELECT id FROM users WHERE role = 'zakladatel' OR role = 'admin'").get();
   if (!adminExists) {
     const adminId = uuidv4();
     const passwordHash = bcrypt.hashSync('admin123', 10);
     db.prepare(`INSERT INTO users (id, username, email, password_hash, role) VALUES (?, ?, ?, ?, ?)`)
-      .run(adminId, 'admin', 'admin@palto-network.io', passwordHash, 'admin');
+      .run(adminId, 'admin', 'admin@palto-network.io', passwordHash, 'zakladatel');
 
     const userId = uuidv4();
     const userHash = bcrypt.hashSync('user123', 10);
@@ -471,7 +475,7 @@ function seedData() {
     const helperId = uuidv4();
     const helperHash = bcrypt.hashSync('helper123', 10);
     db.prepare(`INSERT INTO users (id, username, email, password_hash, role) VALUES (?, ?, ?, ?, ?)`)
-      .run(helperId, 'helper1', 'helper@palto-network.io', helperHash, 'helper');
+      .run(helperId, 'helper1', 'helper@palto-network.io', helperHash, 'spravca');
 
     const nodeId = uuidv4();
     db.prepare(`INSERT INTO nodes (id, name, fqdn, port, memory, disk, cpu) VALUES (?, ?, ?, ?, ?, ?, ?)`)

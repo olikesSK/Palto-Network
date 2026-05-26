@@ -14,7 +14,7 @@ const cronTasks = new Map<string, ScheduledTask>();
 function checkAccess(req: AuthRequest, serverId: string): boolean {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId) as { owner_id: string } | undefined;
   if (!server) return false;
-  if (req.user!.role === 'admin' || req.user!.role === 'helper') return true;
+  if (req.user!.role === 'zakladatel' || req.user!.role === 'spravca') return true;
   return server.owner_id === req.user!.id;
 }
 

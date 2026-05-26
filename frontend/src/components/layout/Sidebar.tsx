@@ -1,12 +1,19 @@
+import { useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Server, Egg, Network, Users, Settings, LogOut, Sparkles, ShieldCheck, Bell, ClipboardList, Megaphone, SlidersHorizontal, Key, Bot } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
+import { useSettingsStore } from '../../store/settings';
 import { useI18n } from '../../hooks/useI18n';
 
 export default function Sidebar() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { t } = useI18n();
+  const { settings, loaded, load } = useSettingsStore();
+
+  useEffect(() => {
+    if (!loaded) load();
+  }, [loaded, load]);
 
   const handleLogout = () => {
     logout();
@@ -14,16 +21,19 @@ export default function Sidebar() {
   };
 
   const getRoleLabel = (role: string) => {
-    if (role === 'admin') return t('role.admin');
-    if (role === 'helper') return t('role.helper');
-    return t('role.user');
+    if (role === 'zakladatel') return 'Zakladateľ';
+    if (role === 'spravca') return 'Správca';
+    return 'Užívateľ';
   };
 
   const getRoleColor = (role: string) => {
-    if (role === 'admin') return '#a78bfa';
-    if (role === 'helper') return '#f59e0b';
+    if (role === 'zakladatel') return '#a78bfa';
+    if (role === 'spravca') return '#f59e0b';
     return 'rgba(255,255,255,0.4)';
   };
+
+  const isZakladatel = user?.role === 'zakladatel';
+  const isSpravca = user?.role === 'spravca';
 
   return (
     <aside
@@ -43,7 +53,7 @@ export default function Sidebar() {
           <Sparkles size={18} className="text-white" />
         </div>
         <div>
-          <div className="font-bold text-[15px] text-white leading-tight">Palto-Network</div>
+          <div className="font-bold text-[15px] text-white leading-tight">{settings.panel_name}</div>
           <div className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Game Panel</div>
         </div>
       </div>
@@ -78,12 +88,12 @@ export default function Sidebar() {
           {t('nav.apikeys')}
         </NavLink>
 
-        {(user?.role === 'admin' || user?.role === 'helper') && (
+        {(isZakladatel || isSpravca) && (
           <>
             <div className="px-3 mt-4 mb-2 text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
               {t('nav.administration')}
             </div>
-            {user?.role === 'admin' && (
+            {isZakladatel && (
               <>
                 <NavLink to="/users" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
                   <Users size={16} />

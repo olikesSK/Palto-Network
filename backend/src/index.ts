@@ -163,7 +163,7 @@ io.on('connection', (socket) => {
 
   socket.on('chat:join', (channel: unknown) => {
     if (typeof channel !== 'string' || !ALLOWED_CHANNELS.has(channel)) return;
-    if (channel === 'admin' && user!.role !== 'admin' && user!.role !== 'helper') return;
+    if (channel === 'admin' && user!.role !== 'zakladatel' && user!.role !== 'spravca') return;
     socket.join(`chat:${channel}`);
     const messages = db.prepare('SELECT * FROM chat_messages WHERE channel = ? ORDER BY created_at DESC LIMIT 50').all(channel);
     socket.emit('chat:history', { channel, messages: (messages as { created_at: string }[]).reverse() });
@@ -173,7 +173,7 @@ io.on('connection', (socket) => {
     if (!data || typeof data !== 'object') return;
     const { channel, message } = data as { channel: unknown; message: unknown };
     if (typeof channel !== 'string' || !ALLOWED_CHANNELS.has(channel)) return;
-    if (channel === 'admin' && user!.role !== 'admin' && user!.role !== 'helper') return;
+    if (channel === 'admin' && user!.role !== 'zakladatel' && user!.role !== 'spravca') return;
     if (typeof message !== 'string' || !message.trim() || message.length > 500) return;
     const clean = message.trim();
     db.prepare('INSERT INTO chat_messages (user_id, username, role, channel, message) VALUES (?, ?, ?, ?, ?)').run(
@@ -190,7 +190,7 @@ io.on('connection', (socket) => {
   socket.on('console:attach', (serverId: string) => {
     const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId) as { owner_id: string; status: string } | undefined;
     if (!server) return;
-    if (user!.role !== 'admin' && user!.role !== 'helper' && server.owner_id !== user!.id) {
+    if (user!.role !== 'zakladatel' && user!.role !== 'spravca' && server.owner_id !== user!.id) {
       const isSubuser = db.prepare('SELECT id FROM server_subusers WHERE server_id = ? AND user_id = ?').get(serverId, user!.id);
       if (!isSubuser) return;
     }
@@ -213,7 +213,7 @@ io.on('connection', (socket) => {
     if (!server || server.status !== 'running') return;
 
     // Check permissions
-    if (user!.role !== 'admin' && user!.role !== 'helper' && server.owner_id !== user!.id) {
+    if (user!.role !== 'zakladatel' && user!.role !== 'spravca' && server.owner_id !== user!.id) {
       const sub = db.prepare('SELECT permissions FROM server_subusers WHERE server_id = ? AND user_id = ?').get(data.serverId, user!.id) as { permissions: string } | undefined;
       if (!sub || !JSON.parse(sub.permissions).console) return;
     }
@@ -231,7 +231,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('announcement:create', (announcement: unknown) => {
-    if (user!.role === 'admin') {
+    if (user!.role === 'zakladatel') {
       io.emit('announcement:new', announcement);
     }
   });

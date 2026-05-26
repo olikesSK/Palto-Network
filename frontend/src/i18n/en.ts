@@ -207,7 +207,7 @@ const en: Record<string, string> = {
   'webhooks.creating': 'Creating...',
 
   // Chat
-  'chat.title': 'Wizz-Chat',
+  'chat.title': 'Palto-Network Chat',
   'chat.global': 'Global',
   'chat.support': 'Support',
   'chat.online': 'online',

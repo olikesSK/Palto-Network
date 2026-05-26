@@ -43,7 +43,13 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
 }
 
 export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction) {
-  if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+  if (req.user?.role !== 'zakladatel') return res.status(403).json({ error: 'Admin access required' });
+  next();
+}
+
+export function requireManager(req: AuthRequest, res: Response, next: NextFunction) {
+  const role = req.user?.role;
+  if (role !== 'zakladatel' && role !== 'spravca') return res.status(403).json({ error: 'Manager access required' });
   next();
 }
 
