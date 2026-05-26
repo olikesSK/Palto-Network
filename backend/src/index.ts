@@ -45,18 +45,6 @@ app.use('/api', apiLimiter);
 
 initDatabase();
 
-// Create server_stats table if not present
-try {
-  db.exec(`CREATE TABLE IF NOT EXISTS server_stats (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    server_id TEXT NOT NULL,
-    cpu REAL NOT NULL DEFAULT 0,
-    memory REAL NOT NULL DEFAULT 0,
-    timestamp TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_server_stats_server_id ON server_stats (server_id)`);
-} catch { /* ignore */ }
-
 // Wire process manager console output to Socket.io
 processManager.setIoEmitter((serverId, line, type) => {
   io.to(`console:${serverId}`).emit('console:output', { serverId, line, type });
