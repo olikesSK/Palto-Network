@@ -4,7 +4,7 @@
   "private": true,
   "workspaces": ["frontend", "backend"],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "dev": "concurrently --raw \"npx tsx watch backend/src/index.ts\" \"npx vite --root frontend --port 5173\"",
     "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
     "start": "npm run start --workspace=backend"
   },
