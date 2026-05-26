@@ -84,6 +84,10 @@ export interface GlobalStats {
   totalUsers: number;
   totalNodes: number;
   onlineNodes: number;
+  allocatedMemory: number;
+  allocatedDisk: number;
+  totalMemory: number;
+  totalDisk: number;
 }
 
 export interface DiscordWebhook {

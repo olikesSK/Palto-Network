@@ -193,6 +193,25 @@ export function initDatabase() {
     );
   `);
 
+  // Performance indexes
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_server_logs_server_ts   ON server_logs(server_id, timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_server_stats_server_ts  ON server_stats(server_id, timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_user_ts      ON audit_logs(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_resource     ON audit_logs(resource, resource_id);
+    CREATE INDEX IF NOT EXISTS idx_servers_owner           ON servers(owner_id);
+    CREATE INDEX IF NOT EXISTS idx_servers_status          ON servers(status);
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_channel   ON chat_messages(channel, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_schedules_server        ON schedules(server_id);
+    CREATE INDEX IF NOT EXISTS idx_backups_server          ON backups(server_id);
+    CREATE INDEX IF NOT EXISTS idx_virtual_files_server    ON virtual_files(server_id, path);
+    CREATE INDEX IF NOT EXISTS idx_discord_warns_user      ON discord_warns(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_discord_mod_logs_user   ON discord_mod_logs(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_discord_levels_rank     ON discord_levels(level DESC, xp DESC);
+    CREATE INDEX IF NOT EXISTS idx_discord_giveaways_open  ON discord_giveaways(ended, cancelled, ends_at);
+    CREATE INDEX IF NOT EXISTS idx_discord_tickets_user    ON discord_tickets(user_id, status);
+  `);
+
   // Discord Bot tables
   db.exec(`
     CREATE TABLE IF NOT EXISTS discord_bot_config (

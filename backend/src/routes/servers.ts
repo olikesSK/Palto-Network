@@ -66,12 +66,25 @@ router.get('/:id', (req: AuthRequest, res: Response) => {
 router.post('/', (req: AuthRequest, res: Response) => {
   const { name, description, node_id, egg_id, memory, disk, cpu, port, environment } = req.body;
   if (!name || !node_id || !egg_id) return res.status(400).json({ error: 'name, node_id, egg_id required' });
+  if (typeof name === 'string' && (name.trim().length < 1 || name.length > 64)) return res.status(400).json({ error: 'Server name must be 1–64 characters' });
+
+  // Validate resource bounds
+  const mem = Math.max(128, Math.min(131072, parseInt(memory) || 1024));
+  const dsk = Math.max(512, Math.min(2097152, parseInt(disk) || 10240));
+  const cpuPct = Math.max(10, Math.min(3200, parseInt(cpu) || 100));
+  const portNum = parseInt(port) || 25565;
+  if (portNum < 1024 || portNum > 65535) return res.status(400).json({ error: 'Port must be between 1024 and 65535' });
+
+  const node = db.prepare('SELECT memory, disk FROM nodes WHERE id = ?').get(node_id) as { memory: number; disk: number } | undefined;
+  if (!node) return res.status(404).json({ error: 'Node not found' });
+  if (mem > node.memory) return res.status(400).json({ error: `Memory exceeds node limit (${node.memory} MB)` });
+  if (dsk > node.disk) return res.status(400).json({ error: `Disk exceeds node limit (${node.disk} MB)` });
 
   const id = uuidv4();
   db.prepare(`
     INSERT INTO servers (id, name, description, owner_id, node_id, egg_id, memory, disk, cpu, port, environment, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'installing')
-  `).run(id, name, description || '', req.user!.id, node_id, egg_id, memory || 1024, disk || 10240, cpu || 100, port || 25565, JSON.stringify(environment || {}));
+  `).run(id, name.trim(), description || '', req.user!.id, node_id, egg_id, mem, dsk, cpuPct, portNum, JSON.stringify(environment || {}));
 
   // Simulate install then set to stopped
   setTimeout(() => {
@@ -222,15 +235,16 @@ router.get('/:id/stats/history', (req: AuthRequest, res: Response) => {
   const server = db.prepare('SELECT id FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Server not found' });
 
-  const period = (req.query.period as string) || '1h';
-  const minutes = period === '24h' ? 1440 : 60;
+  const VALID_PERIODS: Record<string, number> = { '1h': 60, '6h': 360, '24h': 1440 };
+  const rawPeriod = (req.query.period as string) || '1h';
+  const minutes = VALID_PERIODS[rawPeriod] ?? 60;
 
   try {
-    const rows = db.prepare(`
-      SELECT cpu, memory, timestamp FROM server_stats
-      WHERE server_id = ? AND timestamp >= datetime('now', '-${minutes} minutes')
-      ORDER BY timestamp ASC LIMIT 500
-    `).all(req.params.id);
+    const rows = db.prepare(
+      `SELECT cpu, memory, timestamp FROM server_stats
+       WHERE server_id = ? AND timestamp >= datetime('now', ? || ' minutes')
+       ORDER BY timestamp ASC LIMIT 500`
+    ).all(req.params.id, `-${minutes}`);
     return res.json(rows);
   } catch {
     return res.json([]);
