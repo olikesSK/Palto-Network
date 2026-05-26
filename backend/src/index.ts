@@ -20,10 +20,12 @@ import databasesRoutes from './routes/databases';
 import auditRoutes from './routes/audit';
 import announcementsRoutes from './routes/announcements';
 import settingsRoutes from './routes/settings';
+import discordBotRoutes from './routes/discord-bot';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from './middleware/auth';
 import * as processManager from './services/process';
 import { restoreSchedules } from './routes/schedules';
+import { discordBot } from './services/discordBot';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -77,6 +79,7 @@ app.use('/api/apikeys', apikeysRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/announcements', announcementsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/discord-bot', discordBotRoutes);
 
 app.get('/api/stats', (_req, res) => {
   const totalServers = (db.prepare('SELECT COUNT(*) as c FROM servers').get() as { c: number }).c;
@@ -84,8 +87,36 @@ app.get('/api/stats', (_req, res) => {
   const totalUsers = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c;
   const totalNodes = (db.prepare('SELECT COUNT(*) as c FROM nodes').get() as { c: number }).c;
   const onlineNodes = (db.prepare("SELECT COUNT(*) as c FROM nodes WHERE status = 'online'").get() as { c: number }).c;
+  const allocatedMemory = (db.prepare('SELECT COALESCE(SUM(memory),0) as v FROM servers').get() as { v: number }).v;
+  const allocatedDisk = (db.prepare('SELECT COALESCE(SUM(disk),0) as v FROM servers').get() as { v: number }).v;
+  const totalMemory = (db.prepare('SELECT COALESCE(SUM(memory),0) as v FROM nodes').get() as { v: number }).v;
+  const totalDisk = (db.prepare('SELECT COALESCE(SUM(disk),0) as v FROM nodes').get() as { v: number }).v;
 
-  res.json({ totalServers, runningServers, totalUsers, totalNodes, onlineNodes });
+  res.json({ totalServers, runningServers, totalUsers, totalNodes, onlineNodes, allocatedMemory, allocatedDisk, totalMemory, totalDisk });
+});
+
+app.get('/api/stats/history', (req, res) => {
+  const VALID_PERIODS: Record<string, number> = { '1h': 60, '6h': 360, '24h': 1440 };
+  const minutes = VALID_PERIODS[(req.query.period as string)] ?? 60;
+  try {
+    const rows = db.prepare(
+      `SELECT strftime('%H:%M', timestamp) as time,
+              ROUND(AVG(cpu), 1) as cpu,
+              ROUND(AVG(memory), 1) as memory,
+              COUNT(DISTINCT server_id) as active_servers
+       FROM server_stats
+       WHERE timestamp >= datetime('now', ? || ' minutes')
+       GROUP BY strftime('%Y-%m-%d %H:%M', timestamp)
+       ORDER BY time ASC LIMIT 120`
+    ).all(`-${minutes}`) as { time: string; cpu: number; memory: number; active_servers: number }[];
+    res.json(rows);
+  } catch { res.json([]); }
+});
+
+app.get('/api/activity', (req, res) => {
+  const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 10, 1), 50);
+  const rows = db.prepare('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ?').all(limit);
+  res.json(rows);
 });
 
 app.get('/api/status', (_req, res) => {
@@ -134,28 +165,32 @@ io.on('connection', (socket) => {
     io.emit('chat:online', Array.from(onlineUsers.values()));
   });
 
-  // Chat events
-  socket.on('chat:join', (channel: string) => {
+  // Chat events — channel is whitelisted to prevent info leakage
+  const ALLOWED_CHANNELS = new Set(['global', 'admin', 'support', 'announcements']);
+
+  socket.on('chat:join', (channel: unknown) => {
+    if (typeof channel !== 'string' || !ALLOWED_CHANNELS.has(channel)) return;
+    if (channel === 'admin' && user!.role !== 'admin' && user!.role !== 'helper') return;
     socket.join(`chat:${channel}`);
     const messages = db.prepare('SELECT * FROM chat_messages WHERE channel = ? ORDER BY created_at DESC LIMIT 50').all(channel);
     socket.emit('chat:history', { channel, messages: (messages as { created_at: string }[]).reverse() });
   });
 
-  socket.on('chat:message', (data: { channel: string; message: string }) => {
-    if (!data.message?.trim() || data.message.length > 500) return;
-    const clean = data.message.trim();
+  socket.on('chat:message', (data: unknown) => {
+    if (!data || typeof data !== 'object') return;
+    const { channel, message } = data as { channel: unknown; message: unknown };
+    if (typeof channel !== 'string' || !ALLOWED_CHANNELS.has(channel)) return;
+    if (channel === 'admin' && user!.role !== 'admin' && user!.role !== 'helper') return;
+    if (typeof message !== 'string' || !message.trim() || message.length > 500) return;
+    const clean = message.trim();
     db.prepare('INSERT INTO chat_messages (user_id, username, role, channel, message) VALUES (?, ?, ?, ?, ?)').run(
-      user!.id, user!.username, user!.role, data.channel, clean
+      user!.id, user!.username, user!.role, channel, clean
     );
     const msg = {
-      user_id: user!.id,
-      username: user!.username,
-      role: user!.role,
-      channel: data.channel,
-      message: clean,
-      created_at: new Date().toISOString()
+      user_id: user!.id, username: user!.username, role: user!.role,
+      channel, message: clean, created_at: new Date().toISOString()
     };
-    io.to(`chat:${data.channel}`).emit('chat:message', msg);
+    io.to(`chat:${channel}`).emit('chat:message', msg);
   });
 
   // Console events
@@ -216,4 +251,12 @@ httpServer.listen(PORT, () => {
   console.log(`Palto-Network backend running on port ${PORT}`);
   // Restore scheduled tasks from DB
   restoreSchedules();
+
+  // Auto-start Discord bot if enabled
+  const botConfig = db.prepare('SELECT enabled FROM discord_bot_config WHERE id = ?').get('main') as { enabled: number } | undefined;
+  if (botConfig?.enabled) {
+    discordBot.start().then(r => {
+      if (!r.success) console.warn('[Discord Bot] Auto-start failed:', r.error);
+    });
+  }
 });

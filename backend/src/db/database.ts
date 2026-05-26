@@ -193,6 +193,209 @@ export function initDatabase() {
     );
   `);
 
+  // Performance indexes
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_server_logs_server_ts   ON server_logs(server_id, timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_server_stats_server_ts  ON server_stats(server_id, timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_user_ts      ON audit_logs(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_resource     ON audit_logs(resource, resource_id);
+    CREATE INDEX IF NOT EXISTS idx_servers_owner           ON servers(owner_id);
+    CREATE INDEX IF NOT EXISTS idx_servers_status          ON servers(status);
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_channel   ON chat_messages(channel, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_schedules_server        ON schedules(server_id);
+    CREATE INDEX IF NOT EXISTS idx_backups_server          ON backups(server_id);
+    CREATE INDEX IF NOT EXISTS idx_virtual_files_server    ON virtual_files(server_id, path);
+    CREATE INDEX IF NOT EXISTS idx_discord_warns_user      ON discord_warns(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_discord_mod_logs_user   ON discord_mod_logs(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_discord_levels_rank     ON discord_levels(level DESC, xp DESC);
+    CREATE INDEX IF NOT EXISTS idx_discord_giveaways_open  ON discord_giveaways(ended, cancelled, ends_at);
+    CREATE INDEX IF NOT EXISTS idx_discord_tickets_user    ON discord_tickets(user_id, status);
+  `);
+
+  // Discord Bot tables
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS discord_bot_config (
+      id TEXT PRIMARY KEY DEFAULT 'main',
+      bot_token TEXT NOT NULL DEFAULT '',
+      guild_id TEXT NOT NULL DEFAULT '',
+      prefix TEXT NOT NULL DEFAULT '!',
+      activity_type TEXT NOT NULL DEFAULT 'PLAYING',
+      activity_text TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'online',
+      enabled INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_ticket_config (
+      id TEXT PRIMARY KEY DEFAULT 'main',
+      enabled INTEGER NOT NULL DEFAULT 0,
+      category_id TEXT NOT NULL DEFAULT '',
+      log_channel_id TEXT NOT NULL DEFAULT '',
+      support_role_id TEXT NOT NULL DEFAULT '',
+      max_per_user INTEGER NOT NULL DEFAULT 1,
+      welcome_message TEXT NOT NULL DEFAULT 'Welcome {user} to your ticket! Our support team will be with you shortly.',
+      panel_title TEXT NOT NULL DEFAULT 'Support Tickets',
+      panel_description TEXT NOT NULL DEFAULT 'Click the button below to open a support ticket.',
+      panel_color TEXT NOT NULL DEFAULT '#7c3aed'
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_tickets (
+      id TEXT PRIMARY KEY,
+      channel_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      username TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      closed_at TEXT,
+      closed_by_id TEXT,
+      closed_by_username TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_welcome_config (
+      id TEXT PRIMARY KEY DEFAULT 'main',
+      enabled INTEGER NOT NULL DEFAULT 0,
+      channel_id TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL DEFAULT 'Welcome {user} to **{server}**! You are member #{count}.',
+      embed_enabled INTEGER NOT NULL DEFAULT 1,
+      embed_title TEXT NOT NULL DEFAULT 'Welcome to {server}!',
+      embed_color TEXT NOT NULL DEFAULT '#7c3aed',
+      embed_thumbnail INTEGER NOT NULL DEFAULT 1,
+      dm_enabled INTEGER NOT NULL DEFAULT 0,
+      dm_message TEXT NOT NULL DEFAULT 'Welcome to {server}! Please read the rules.',
+      leave_enabled INTEGER NOT NULL DEFAULT 0,
+      leave_channel_id TEXT NOT NULL DEFAULT '',
+      leave_message TEXT NOT NULL DEFAULT '**{username}** has left **{server}**. We now have {count} members.'
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_giveaways (
+      id TEXT PRIMARY KEY,
+      channel_id TEXT NOT NULL,
+      message_id TEXT NOT NULL DEFAULT '',
+      prize TEXT NOT NULL,
+      winners_count INTEGER NOT NULL DEFAULT 1,
+      host_id TEXT NOT NULL,
+      host_username TEXT NOT NULL,
+      entries TEXT NOT NULL DEFAULT '[]',
+      winners TEXT NOT NULL DEFAULT '[]',
+      ends_at TEXT NOT NULL,
+      ended INTEGER NOT NULL DEFAULT 0,
+      cancelled INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_sticky_messages (
+      id TEXT PRIMARY KEY,
+      channel_id TEXT NOT NULL UNIQUE,
+      content TEXT NOT NULL,
+      last_message_id TEXT NOT NULL DEFAULT '',
+      enabled INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_auto_roles (
+      id TEXT PRIMARY KEY,
+      role_id TEXT NOT NULL,
+      role_name TEXT NOT NULL,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_reaction_roles (
+      id TEXT PRIMARY KEY,
+      channel_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      emoji TEXT NOT NULL,
+      role_id TEXT NOT NULL,
+      role_name TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_warns (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      username TEXT NOT NULL,
+      moderator_id TEXT NOT NULL,
+      moderator_username TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_mod_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      username TEXT NOT NULL,
+      moderator_id TEXT NOT NULL,
+      moderator_username TEXT NOT NULL,
+      reason TEXT NOT NULL DEFAULT '',
+      duration TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_logging_config (
+      id TEXT PRIMARY KEY DEFAULT 'main',
+      enabled INTEGER NOT NULL DEFAULT 0,
+      message_delete_channel TEXT NOT NULL DEFAULT '',
+      message_edit_channel TEXT NOT NULL DEFAULT '',
+      member_join_channel TEXT NOT NULL DEFAULT '',
+      member_leave_channel TEXT NOT NULL DEFAULT '',
+      role_change_channel TEXT NOT NULL DEFAULT '',
+      voice_activity_channel TEXT NOT NULL DEFAULT '',
+      ban_channel TEXT NOT NULL DEFAULT ''
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_levels (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL UNIQUE,
+      username TEXT NOT NULL,
+      xp INTEGER NOT NULL DEFAULT 0,
+      level INTEGER NOT NULL DEFAULT 0,
+      messages INTEGER NOT NULL DEFAULT 0,
+      last_xp_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_level_roles (
+      id TEXT PRIMARY KEY,
+      level INTEGER NOT NULL,
+      role_id TEXT NOT NULL,
+      role_name TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_custom_commands (
+      id TEXT PRIMARY KEY,
+      trigger TEXT NOT NULL UNIQUE,
+      response TEXT NOT NULL,
+      embed_enabled INTEGER NOT NULL DEFAULT 0,
+      embed_color TEXT NOT NULL DEFAULT '#7c3aed',
+      enabled INTEGER NOT NULL DEFAULT 1,
+      uses INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS discord_automod_config (
+      id TEXT PRIMARY KEY DEFAULT 'main',
+      enabled INTEGER NOT NULL DEFAULT 0,
+      anti_spam INTEGER NOT NULL DEFAULT 0,
+      anti_links INTEGER NOT NULL DEFAULT 1,
+      anti_invites INTEGER NOT NULL DEFAULT 1,
+      bad_words TEXT NOT NULL DEFAULT '[]',
+      log_channel TEXT NOT NULL DEFAULT '',
+      spam_threshold INTEGER NOT NULL DEFAULT 5,
+      spam_interval INTEGER NOT NULL DEFAULT 5
+    );
+  `);
+
+  // Seed default bot config rows
+  try {
+    db.exec("INSERT OR IGNORE INTO discord_bot_config (id) VALUES ('main')");
+    db.exec("INSERT OR IGNORE INTO discord_ticket_config (id) VALUES ('main')");
+    db.exec("INSERT OR IGNORE INTO discord_welcome_config (id) VALUES ('main')");
+    db.exec("INSERT OR IGNORE INTO discord_logging_config (id) VALUES ('main')");
+    db.exec("INSERT OR IGNORE INTO discord_automod_config (id) VALUES ('main')");
+  } catch {}
+
   // Column migrations
   try { db.exec("ALTER TABLE users ADD COLUMN totp_secret TEXT"); } catch {}
   try { db.exec("ALTER TABLE users ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0"); } catch {}

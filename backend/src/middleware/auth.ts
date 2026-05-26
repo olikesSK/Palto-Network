@@ -5,6 +5,10 @@ import { db } from '../db/database';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'palto-network-secret-key-2024';
 
+if (!process.env.JWT_SECRET) {
+  console.warn('\x1b[33m[Security Warning]\x1b[0m JWT_SECRET env var is not set — using default insecure secret. Set JWT_SECRET in production!\x1b[0m');
+}
+
 export interface AuthRequest extends Request {
   user?: { id: string; role: string; username: string };
 }
