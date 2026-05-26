@@ -534,7 +534,7 @@ export class DiscordBotService {
     const warns = db.prepare('SELECT * FROM discord_warns WHERE user_id = ? ORDER BY created_at DESC LIMIT 10').all(target.id) as { id: string; reason: string; moderator_username: string; created_at: string }[];
     const embed = new EmbedBuilder().setTitle(`⚠️ Varovania pre ${target.username}`).setColor(0xf59e0b);
     if (warns.length === 0) embed.setDescription('Žiadne varovania.');
-    else embed.setDescription(warns.map((w, i) => `**${i + 1}.** \`${w.id.slice(0, 8)}\` - ${w.reason}\n*by ${w.moderator_username} • ${new Date(w.created_at).toLocaleDateString()}*`).join('\n\n'));
+    else embed.setDescription(warns.map((w, i) => `**${i + 1}.** \`${w.id.slice(0, 8)}\` - ${w.reason}\n*od ${w.moderator_username} • ${new Date(w.created_at).toLocaleDateString()}*`).join('\n\n'));
     await interaction.reply({ embeds: [embed], ephemeral: true });
   }
 
@@ -548,7 +548,7 @@ export class DiscordBotService {
 
   private async cmdBan(interaction: ChatInputCommandInteraction) {
     const target = interaction.options.getMember('user') as GuildMember | null;
-    const reason = interaction.options.getString('reason') ?? 'No reason provided';
+    const reason = interaction.options.getString('reason') ?? 'Dôvod nebol uvedený';
     const delDays = interaction.options.getInteger('delete_messages') ?? 0;
     if (!target) { await interaction.reply({ content: '❌ Člen nebol nájdený.', ephemeral: true }); return; }
     await target.ban({ reason, deleteMessageSeconds: delDays * 86400 });
@@ -558,7 +558,7 @@ export class DiscordBotService {
 
   private async cmdUnban(interaction: ChatInputCommandInteraction) {
     const userId = interaction.options.getString('user_id', true);
-    const reason = interaction.options.getString('reason') ?? 'No reason provided';
+    const reason = interaction.options.getString('reason') ?? 'Dôvod nebol uvedený';
     await interaction.guild!.members.unban(userId, reason);
     db.prepare("INSERT INTO discord_mod_logs (action, user_id, username, moderator_id, moderator_username, reason) VALUES ('unban', ?, 'Unknown', ?, ?, ?)").run(userId, interaction.user.id, interaction.user.username, reason);
     await interaction.reply({ content: `✅ Používateľ \`${userId}\` bol odbanovaný.` });
@@ -566,7 +566,7 @@ export class DiscordBotService {
 
   private async cmdKick(interaction: ChatInputCommandInteraction) {
     const target = interaction.options.getMember('user') as GuildMember | null;
-    const reason = interaction.options.getString('reason') ?? 'No reason provided';
+    const reason = interaction.options.getString('reason') ?? 'Dôvod nebol uvedený';
     if (!target) { await interaction.reply({ content: '❌ Člen nebol nájdený.', ephemeral: true }); return; }
     await target.kick(reason);
     db.prepare("INSERT INTO discord_mod_logs (action, user_id, username, moderator_id, moderator_username, reason) VALUES ('kick', ?, ?, ?, ?, ?)").run(target.user.id, target.user.username, interaction.user.id, interaction.user.username, reason);
@@ -576,7 +576,7 @@ export class DiscordBotService {
   private async cmdMute(interaction: ChatInputCommandInteraction) {
     const target = interaction.options.getMember('user') as GuildMember | null;
     const durStr = interaction.options.getString('duration', true);
-    const reason = interaction.options.getString('reason') ?? 'No reason provided';
+    const reason = interaction.options.getString('reason') ?? 'Dôvod nebol uvedený';
     const durMs = parseDuration(durStr);
     if (!target || !durMs) { await interaction.reply({ content: '❌ Neplatný člen alebo trvanie.', ephemeral: true }); return; }
     await target.timeout(durMs, reason);
@@ -719,7 +719,7 @@ export class DiscordBotService {
     const giveaways = db.prepare('SELECT * FROM discord_giveaways WHERE ended = 0 AND cancelled = 0 ORDER BY ends_at ASC LIMIT 10').all() as Giveaway[];
     const embed = new EmbedBuilder().setTitle('🎉 Aktívne giveawaye').setColor(0x7c3aed);
     if (!giveaways.length) embed.setDescription('Žiadne aktívne giveawaye.');
-    else embed.setDescription(giveaways.map(g => `**${g.prize}** - ${g.winners_count} winner(s)\n\`${g.id.slice(0, 8)}\` • Ends <t:${Math.floor(new Date(g.ends_at).getTime() / 1000)}:R>`).join('\n\n'));
+    else embed.setDescription(giveaways.map(g => `**${g.prize}** - ${g.winners_count} víťaz(ov)\n\`${g.id.slice(0, 8)}\` • Koniec <t:${Math.floor(new Date(g.ends_at).getTime() / 1000)}:R>`).join('\n\n'));
     await interaction.reply({ embeds: [embed], ephemeral: true });
   }
 
@@ -1008,8 +1008,8 @@ export class DiscordBotService {
   private async logBanEvent(ban: GuildBan, action: 'ban' | 'unban') {
     const ch = await this.getLogChannel('ban_channel', ban.guild);
     if (!ch) return;
-    const embed = new EmbedBuilder().setTitle(action === 'ban' ? '🔨 Member Banned' : '✅ Member Unbanned').addFields({ name: 'User', value: ban.user.tag, inline: true }, { name: 'User ID', value: ban.user.id, inline: true }).setColor(action === 'ban' ? 0xef4444 : 0x22c55e).setTimestamp();
-    if (ban.reason) embed.addFields({ name: 'Reason', value: ban.reason });
+    const embed = new EmbedBuilder().setTitle(action === 'ban' ? '🔨 Člen zabanovaný' : '✅ Člen odbanovaný').addFields({ name: 'Používateľ', value: ban.user.tag, inline: true }, { name: 'ID používateľa', value: ban.user.id, inline: true }).setColor(action === 'ban' ? 0xef4444 : 0x22c55e).setTimestamp();
+    if (ban.reason) embed.addFields({ name: 'Dôvod', value: ban.reason });
     await ch.send({ embeds: [embed] }).catch(() => {});
   }
 
@@ -1019,7 +1019,7 @@ export class DiscordBotService {
     const message = interaction.options.getString('message', true);
     const channel = (interaction.options.getChannel('channel') ?? interaction.channel) as TextChannel;
     await channel.send(message);
-    await interaction.reply({ content: '✅ Message sent.', ephemeral: true });
+    await interaction.reply({ content: '✅ Správa odoslaná.', ephemeral: true });
   }
 
   private async cmdEmbed(interaction: ChatInputCommandInteraction) {
@@ -1028,15 +1028,15 @@ export class DiscordBotService {
     const color = interaction.options.getString('color') ?? '#7c3aed';
     const channel = (interaction.options.getChannel('channel') ?? interaction.channel) as TextChannel;
     await channel.send({ embeds: [new EmbedBuilder().setTitle(title).setDescription(description).setColor(parseInt(color.replace('#', ''), 16)).setTimestamp()] });
-    await interaction.reply({ content: '✅ Embed sent.', ephemeral: true });
+    await interaction.reply({ content: '✅ Embed odoslaný.', ephemeral: true });
   }
 
   private async cmdRole(interaction: ChatInputCommandInteraction) {
     const sub = interaction.options.getSubcommand();
     const target = interaction.options.getMember('user') as GuildMember;
     const role = interaction.options.getRole('role')!;
-    if (sub === 'add') { await target.roles.add(role.id); await interaction.reply({ content: `✅ Added ${role} to ${target.user.tag}.` }); }
-    else { await target.roles.remove(role.id); await interaction.reply({ content: `✅ Removed ${role} from ${target.user.tag}.` }); }
+    if (sub === 'add') { await target.roles.add(role.id); await interaction.reply({ content: `✅ Rola ${role} pridaná používateľovi ${target.user.tag}.` }); }
+    else { await target.roles.remove(role.id); await interaction.reply({ content: `✅ Rola ${role} odobraná používateľovi ${target.user.tag}.` }); }
   }
 
   private async cmdUserinfo(interaction: ChatInputCommandInteraction) {
@@ -1045,10 +1045,10 @@ export class DiscordBotService {
     const embed = new EmbedBuilder().setTitle(`👤 ${user.username}`).setThumbnail(user.displayAvatarURL()).addFields(
       { name: 'ID', value: user.id, inline: true },
       { name: 'Tag', value: user.tag, inline: true },
-      { name: 'Nickname', value: target.nickname ?? '*none*', inline: true },
-      { name: 'Joined Server', value: `<t:${Math.floor((target.joinedTimestamp ?? 0) / 1000)}:R>`, inline: true },
-      { name: 'Account Created', value: `<t:${Math.floor(user.createdTimestamp / 1000)}:R>`, inline: true },
-      { name: 'Roles', value: target.roles.cache.filter(r => r.id !== interaction.guild!.id).map(r => `<@&${r.id}>`).join(', ') || '*none*', inline: false },
+      { name: 'Prezývka', value: target.nickname ?? '*žiadna*', inline: true },
+      { name: 'Pripojil sa', value: `<t:${Math.floor((target.joinedTimestamp ?? 0) / 1000)}:R>`, inline: true },
+      { name: 'Účet vytvorený', value: `<t:${Math.floor(user.createdTimestamp / 1000)}:R>`, inline: true },
+      { name: 'Roly', value: target.roles.cache.filter(r => r.id !== interaction.guild!.id).map(r => `<@&${r.id}>`).join(', ') || '*žiadne*', inline: false },
     ).setColor(0x7c3aed).setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }
@@ -1058,45 +1058,45 @@ export class DiscordBotService {
     await guild.fetch();
     const embed = new EmbedBuilder().setTitle(guild.name).setThumbnail(guild.iconURL()).addFields(
       { name: 'ID', value: guild.id, inline: true },
-      { name: 'Owner', value: `<@${guild.ownerId}>`, inline: true },
-      { name: 'Members', value: String(guild.memberCount), inline: true },
-      { name: 'Channels', value: String(guild.channels.cache.size), inline: true },
-      { name: 'Roles', value: String(guild.roles.cache.size - 1), inline: true },
-      { name: 'Created', value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`, inline: true },
-      { name: 'Boost Level', value: String(guild.premiumTier), inline: true },
-      { name: 'Boosts', value: String(guild.premiumSubscriptionCount ?? 0), inline: true },
+      { name: 'Vlastník', value: `<@${guild.ownerId}>`, inline: true },
+      { name: 'Členovia', value: String(guild.memberCount), inline: true },
+      { name: 'Kanály', value: String(guild.channels.cache.size), inline: true },
+      { name: 'Roly', value: String(guild.roles.cache.size - 1), inline: true },
+      { name: 'Vytvorený', value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`, inline: true },
+      { name: 'Úroveň boostov', value: String(guild.premiumTier), inline: true },
+      { name: 'Boosty', value: String(guild.premiumSubscriptionCount ?? 0), inline: true },
     ).setColor(0x7c3aed).setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }
 
   private async cmdAvatar(interaction: ChatInputCommandInteraction) {
     const target = interaction.options.getUser('user') ?? interaction.user;
-    await interaction.reply({ embeds: [new EmbedBuilder().setTitle(`🖼️ ${target.username}'s Avatar`).setImage(target.displayAvatarURL({ size: 512 })).setColor(0x7c3aed)] });
+    await interaction.reply({ embeds: [new EmbedBuilder().setTitle(`🖼️ Avatar používateľa ${target.username}`).setImage(target.displayAvatarURL({ size: 512 })).setColor(0x7c3aed)] });
   }
 
   private async cmdSlowmode(interaction: ChatInputCommandInteraction) {
     const seconds = interaction.options.getInteger('seconds', true);
     const channel = (interaction.options.getChannel('channel') ?? interaction.channel) as TextChannel;
     await channel.setRateLimitPerUser(seconds);
-    await interaction.reply({ content: `✅ Slowmode set to ${seconds}s in ${channel}.`, ephemeral: true });
+    await interaction.reply({ content: `✅ Pomalý režim nastavený na ${seconds}s v ${channel}.`, ephemeral: true });
   }
 
   private async cmdLock(interaction: ChatInputCommandInteraction) {
     const channel = (interaction.options.getChannel('channel') ?? interaction.channel) as TextChannel;
     await channel.permissionOverwrites.edit(interaction.guild!.id, { SendMessages: false });
-    await interaction.reply({ content: `🔒 ${channel} has been locked.` });
+    await interaction.reply({ content: `🔒 ${channel} bol zamknutý.` });
   }
 
   private async cmdUnlock(interaction: ChatInputCommandInteraction) {
     const channel = (interaction.options.getChannel('channel') ?? interaction.channel) as TextChannel;
     await channel.permissionOverwrites.edit(interaction.guild!.id, { SendMessages: null });
-    await interaction.reply({ content: `🔓 ${channel} has been unlocked.` });
+    await interaction.reply({ content: `🔓 ${channel} bol odomknutý.` });
   }
 
   private async cmdPing(interaction: ChatInputCommandInteraction) {
-    const sent = await interaction.reply({ content: '📡 Pinging...', fetchReply: true });
+    const sent = await interaction.reply({ content: '📡 Pinguje...', fetchReply: true });
     const latency = sent.createdTimestamp - interaction.createdTimestamp;
-    await interaction.editReply({ content: `🏓 Pong! Latency: **${latency}ms** | API: **${this.client!.ws.ping}ms**` });
+    await interaction.editReply({ content: `🏓 Pong! Odozva: **${latency}ms** | API odozva: **${this.client!.ws.ping}ms**` });
   }
 
   private async cmdPoll(interaction: ChatInputCommandInteraction) {
@@ -1112,10 +1112,10 @@ export class DiscordBotService {
       description = opts.map((o, i) => `${emojis[i]} ${o}`).join('\n');
     } else {
       emojis = ['✅', '❌'];
-      description = '✅ Yes\n❌ No';
+      description = '✅ Áno\n❌ Nie';
     }
 
-    const embed = new EmbedBuilder().setTitle(`📊 ${question}`).setDescription(description).setColor(0x7c3aed).setFooter({ text: `Poll by ${interaction.user.tag}` }).setTimestamp();
+    const embed = new EmbedBuilder().setTitle(`📊 ${question}`).setDescription(description).setColor(0x7c3aed).setFooter({ text: `Anketa od ${interaction.user.tag}` }).setTimestamp();
     const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
     for (const emoji of emojis) await (msg as Message).react(emoji).catch(() => {});
   }
