@@ -10,12 +10,21 @@ import Users from './pages/Users';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
 import Webhooks from './pages/Webhooks';
+import ApiKeys from './pages/ApiKeys';
+import AuditLog from './pages/AuditLog';
+import Announcements from './pages/Announcements';
+import PanelSettings from './pages/PanelSettings';
+import StatusPage from './pages/StatusPage';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public routes - no auth */}
         <Route path="/login" element={<Login />} />
+        <Route path="/status" element={<StatusPage />} />
+
+        {/* Authenticated layout */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -27,7 +36,12 @@ export default function App() {
           <Route path="admin" element={<Admin />} />
           <Route path="settings" element={<Settings />} />
           <Route path="webhooks" element={<Webhooks />} />
+          <Route path="apikeys" element={<ApiKeys />} />
+          <Route path="audit" element={<AuditLog />} />
+          <Route path="announcements" element={<Announcements />} />
+          <Route path="panel-settings" element={<PanelSettings />} />
         </Route>
+
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>

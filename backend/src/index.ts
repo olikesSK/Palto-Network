@@ -10,6 +10,15 @@ import nodeRoutes from './routes/nodes';
 import userRoutes from './routes/users';
 import webhookRoutes from './routes/webhooks';
 import permissionRoutes from './routes/permissions';
+import filesRoutes from './routes/files';
+import backupsRoutes from './routes/backups';
+import schedulesRoutes from './routes/schedules';
+import twofaRoutes from './routes/twofa';
+import apikeysRoutes from './routes/apikeys';
+import databasesRoutes from './routes/databases';
+import auditRoutes from './routes/audit';
+import announcementsRoutes from './routes/announcements';
+import settingsRoutes from './routes/settings';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from './middleware/auth';
 
@@ -32,14 +41,46 @@ app.use('/api/nodes', nodeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/webhooks', webhookRoutes);
 
+// New routes
+app.use('/api/servers', filesRoutes);
+app.use('/api/servers', backupsRoutes);
+app.use('/api/servers', schedulesRoutes);
+app.use('/api/servers', databasesRoutes);
+app.use('/api/auth', twofaRoutes);
+app.use('/api/apikeys', apikeysRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/announcements', announcementsRoutes);
+app.use('/api/settings', settingsRoutes);
+
 app.get('/api/stats', (_req, res) => {
-  const totalServers = (db.prepare('SELECT COUNT(*) as c FROM servers').get() as any).c;
-  const runningServers = (db.prepare("SELECT COUNT(*) as c FROM servers WHERE status = 'running'").get() as any).c;
-  const totalUsers = (db.prepare('SELECT COUNT(*) as c FROM users').get() as any).c;
-  const totalNodes = (db.prepare('SELECT COUNT(*) as c FROM nodes').get() as any).c;
-  const onlineNodes = (db.prepare("SELECT COUNT(*) as c FROM nodes WHERE status = 'online'").get() as any).c;
+  const totalServers = (db.prepare('SELECT COUNT(*) as c FROM servers').get() as { c: number }).c;
+  const runningServers = (db.prepare("SELECT COUNT(*) as c FROM servers WHERE status = 'running'").get() as { c: number }).c;
+  const totalUsers = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c;
+  const totalNodes = (db.prepare('SELECT COUNT(*) as c FROM nodes').get() as { c: number }).c;
+  const onlineNodes = (db.prepare("SELECT COUNT(*) as c FROM nodes WHERE status = 'online'").get() as { c: number }).c;
 
   res.json({ totalServers, runningServers, totalUsers, totalNodes, onlineNodes });
+});
+
+// Public status endpoint
+app.get('/api/status', (_req, res) => {
+  const nodes = db.prepare("SELECT id, name, fqdn, status FROM nodes").all() as { id: string; name: string; fqdn: string; status: string }[];
+  const servers = db.prepare("SELECT id, name, status, node_id FROM servers").all() as { id: string; name: string; status: string; node_id: string }[];
+  const totalServers = servers.length;
+  const runningServers = servers.filter(s => s.status === 'running').length;
+  const onlineNodes = nodes.filter(n => n.status === 'online').length;
+
+  res.json({
+    panel: 'Wizz-Craft',
+    status: onlineNodes === nodes.length ? 'operational' : onlineNodes > 0 ? 'degraded' : 'outage',
+    nodes: nodes.map(n => ({
+      ...n,
+      servers: servers.filter(s => s.node_id === n.id).length,
+      running: servers.filter(s => s.node_id === n.id && s.status === 'running').length,
+    })),
+    stats: { totalServers, runningServers, totalNodes: nodes.length, onlineNodes },
+    updated: new Date().toISOString(),
+  });
 });
 
 const consoleSessions = new Map<string, NodeJS.Timeout>();
@@ -47,10 +88,10 @@ const onlineUsers = new Map<string, { id: string; username: string; role: string
 
 io.on('connection', (socket) => {
   const token = socket.handshake.auth.token;
-  let user: any = null;
+  let user: { id: string; username: string; role: string } | null = null;
 
   try {
-    user = jwt.verify(token, JWT_SECRET);
+    user = jwt.verify(token, JWT_SECRET) as { id: string; username: string; role: string };
   } catch {
     socket.disconnect();
     return;
@@ -75,19 +116,19 @@ io.on('connection', (socket) => {
   socket.on('chat:join', (channel: string) => {
     socket.join(`chat:${channel}`);
     const messages = db.prepare('SELECT * FROM chat_messages WHERE channel = ? ORDER BY created_at DESC LIMIT 50').all(channel);
-    socket.emit('chat:history', { channel, messages: (messages as any[]).reverse() });
+    socket.emit('chat:history', { channel, messages: (messages as { created_at: string }[]).reverse() });
   });
 
   socket.on('chat:message', (data: { channel: string; message: string }) => {
     if (!data.message?.trim() || data.message.length > 500) return;
     const clean = data.message.trim();
     db.prepare('INSERT INTO chat_messages (user_id, username, role, channel, message) VALUES (?, ?, ?, ?, ?)').run(
-      user.id, user.username, user.role, data.channel, clean
+      user!.id, user!.username, user!.role, data.channel, clean
     );
     const msg = {
-      user_id: user.id,
-      username: user.username,
-      role: user.role,
+      user_id: user!.id,
+      username: user!.username,
+      role: user!.role,
       channel: data.channel,
       message: clean,
       created_at: new Date().toISOString()
@@ -97,17 +138,17 @@ io.on('connection', (socket) => {
 
   // Console events
   socket.on('console:attach', (serverId: string) => {
-    const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId) as any;
+    const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId) as { owner_id: string; status: string } | undefined;
     if (!server) return;
-    if (user.role !== 'admin' && user.role !== 'helper' && server.owner_id !== user.id) {
-      const isSubuser = db.prepare('SELECT id FROM server_subusers WHERE server_id = ? AND user_id = ?').get(serverId, user.id);
+    if (user!.role !== 'admin' && user!.role !== 'helper' && server.owner_id !== user!.id) {
+      const isSubuser = db.prepare('SELECT id FROM server_subusers WHERE server_id = ? AND user_id = ?').get(serverId, user!.id);
       if (!isSubuser) return;
     }
 
     socket.join(`console:${serverId}`);
 
     const logs = db.prepare('SELECT * FROM server_logs WHERE server_id = ? ORDER BY timestamp DESC LIMIT 50').all(serverId);
-    (logs as any[]).reverse().forEach((log: any) => {
+    (logs as { message: string; type: string }[]).reverse().forEach((log) => {
       socket.emit('console:output', { serverId, line: log.message, type: log.type });
     });
 
@@ -131,7 +172,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('console:command', (data: { serverId: string; command: string }) => {
-    const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(data.serverId) as any;
+    const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(data.serverId) as { status: string } | undefined;
     if (!server || server.status !== 'running') return;
 
     const line = `> ${data.command}`;
@@ -144,7 +185,17 @@ io.on('connection', (socket) => {
       db.prepare('INSERT INTO server_logs (server_id, message, type) VALUES (?, ?, ?)').run(data.serverId, response, 'output');
     }, 300);
   });
+
+  // Announcements broadcast
+  socket.on('announcement:create', (announcement: unknown) => {
+    if (user!.role === 'admin') {
+      io.emit('announcement:new', announcement);
+    }
+  });
 });
+
+// Export io for use in routes
+export { io };
 
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {

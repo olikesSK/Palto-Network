@@ -103,9 +103,144 @@ export function initDatabase() {
       message TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS virtual_files (
+      id TEXT PRIMARY KEY,
+      server_id TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+      path TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      size INTEGER NOT NULL DEFAULT 0,
+      is_dir INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(server_id, path)
+    );
+
+    CREATE TABLE IF NOT EXISTS backups (
+      id TEXT PRIMARY KEY,
+      server_id TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      size INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'pending',
+      note TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS schedules (
+      id TEXT PRIMARY KEY,
+      server_id TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      cron_minute TEXT NOT NULL DEFAULT '0',
+      cron_hour TEXT NOT NULL DEFAULT '4',
+      cron_day_month TEXT NOT NULL DEFAULT '*',
+      cron_month TEXT NOT NULL DEFAULT '*',
+      cron_day_week TEXT NOT NULL DEFAULT '*',
+      action TEXT NOT NULL DEFAULT 'command',
+      payload TEXT NOT NULL DEFAULT '',
+      enabled INTEGER NOT NULL DEFAULT 1,
+      last_run TEXT,
+      next_run TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT,
+      username TEXT NOT NULL,
+      action TEXT NOT NULL,
+      resource TEXT NOT NULL,
+      resource_id TEXT,
+      details TEXT,
+      ip TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      key_hash TEXT NOT NULL,
+      key_preview TEXT NOT NULL,
+      permissions TEXT NOT NULL DEFAULT '["servers:read"]',
+      last_used TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS server_databases (
+      id TEXT PRIMARY KEY,
+      server_id TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      db_username TEXT NOT NULL,
+      db_password TEXT NOT NULL,
+      host TEXT NOT NULL DEFAULT '127.0.0.1',
+      port INTEGER NOT NULL DEFAULT 3306,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS announcements (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'info',
+      created_by TEXT NOT NULL,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS panel_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
 
+  // Column migrations
+  try { db.exec("ALTER TABLE users ADD COLUMN totp_secret TEXT"); } catch {}
+  try { db.exec("ALTER TABLE users ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0"); } catch {}
+  try { db.exec("ALTER TABLE users ADD COLUMN language TEXT NOT NULL DEFAULT 'cs'"); } catch {}
+  try { db.exec("ALTER TABLE users ADD COLUMN email_notifications INTEGER NOT NULL DEFAULT 1"); } catch {}
+
   seedData();
+}
+
+function seedServerFiles(serverId: string, eggName: string) {
+  const files: Array<{path: string; content: string; is_dir: number}> = [];
+
+  if (eggName.includes('Minecraft') || eggName.includes('minecraft')) {
+    files.push(
+      { path: '/', content: '', is_dir: 1 },
+      { path: '/server.properties', content: `server-port=25565\nmax-players=20\nmotd=Wizz-Craft Server\ngamemode=survival\ndifficulty=normal\nspawn-protection=16\nonline-mode=true\nlevel-name=world\n`, is_dir: 0 },
+      { path: '/ops.json', content: '[]', is_dir: 0 },
+      { path: '/whitelist.json', content: '[]', is_dir: 0 },
+      { path: '/banned-players.json', content: '[]', is_dir: 0 },
+      { path: '/logs/', content: '', is_dir: 1 },
+      { path: '/logs/latest.log', content: '[00:00:01] [Server thread/INFO]: Starting Minecraft server\n[00:00:02] [Server thread/INFO]: Loading properties\n[00:00:03] [Server thread/INFO]: Done (2.5s)!\n', is_dir: 0 },
+      { path: '/world/', content: '', is_dir: 1 },
+      { path: '/plugins/', content: '', is_dir: 1 },
+    );
+  } else if (eggName.includes('Rust')) {
+    files.push(
+      { path: '/', content: '', is_dir: 1 },
+      { path: '/server.cfg', content: `server.hostname "Wizz-Craft Rust"\nserver.maxplayers 100\nserver.description "Powered by Wizz-Craft"\n`, is_dir: 0 },
+      { path: '/oxide/', content: '', is_dir: 1 },
+      { path: '/oxide/config/', content: '', is_dir: 1 },
+      { path: '/saves/', content: '', is_dir: 1 },
+    );
+  } else if (eggName.includes('Counter')) {
+    files.push(
+      { path: '/', content: '', is_dir: 1 },
+      { path: '/game/cfg/', content: '', is_dir: 1 },
+      { path: '/game/cfg/server.cfg', content: `hostname "Wizz-Craft CS2"\nrcon_password "changeme"\nmp_autoteambalance 1\nmp_maxrounds 30\n`, is_dir: 0 },
+    );
+  } else {
+    files.push(
+      { path: '/', content: '', is_dir: 1 },
+      { path: '/config.json', content: JSON.stringify({ port: 25565, debug: false }, null, 2), is_dir: 0 },
+      { path: '/logs/', content: '', is_dir: 1 },
+    );
+  }
+
+  const ins = db.prepare("INSERT OR IGNORE INTO virtual_files (id, server_id, path, content, size, is_dir) VALUES (?, ?, ?, ?, ?, ?)");
+  files.forEach(f => ins.run(uuidv4(), serverId, f.path, f.content, f.content.length, f.is_dir));
 }
 
 function seedData() {
@@ -135,6 +270,23 @@ function seedData() {
       .run(node2Id, 'Node US-1', 'node2.wizz-craft.io', 8080, 16384, 256000, 400);
 
     seedEggs(adminId, nodeId, userId);
+  }
+
+  // Seed panel settings
+  const brandingExists = db.prepare("SELECT key FROM panel_settings WHERE key = 'panel_name'").get();
+  if (!brandingExists) {
+    const defaults: [string, string][] = [
+      ['panel_name', 'Wizz-Craft'],
+      ['panel_description', 'Herní server panel'],
+      ['panel_color', '#7c3aed'],
+      ['smtp_host', ''],
+      ['smtp_port', '587'],
+      ['smtp_user', ''],
+      ['smtp_pass', ''],
+      ['smtp_from', 'noreply@wizz-craft.io'],
+    ];
+    const ins = db.prepare("INSERT OR IGNORE INTO panel_settings (key, value) VALUES (?, ?)");
+    defaults.forEach(([k, v]) => ins.run(k, v));
   }
 }
 
@@ -280,12 +432,14 @@ function seedEggs(adminId: string, _nodeId: string, _userId: string) {
     ];
 
     for (const s of servers) {
-      const eggRow = db.prepare('SELECT id FROM eggs WHERE name = ?').get(s.egg) as { id: string } | undefined;
+      const eggRow = db.prepare('SELECT id, name FROM eggs WHERE name = ?').get(s.egg) as { id: string; name: string } | undefined;
       if (eggRow) {
+        const serverId = uuidv4();
         db.prepare(`
           INSERT INTO servers (id, name, owner_id, node_id, egg_id, status, memory, disk, cpu, port)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(uuidv4(), s.name, adminId, firstNode.id, eggRow.id, s.status, s.memory, s.disk, s.cpu, s.port);
+        `).run(serverId, s.name, adminId, firstNode.id, eggRow.id, s.status, s.memory, s.disk, s.cpu, s.port);
+        seedServerFiles(serverId, eggRow.name);
       }
     }
   }

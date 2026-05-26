@@ -1,17 +1,26 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { User, Lock, Save, Shield } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Lock, Save, Shield, Smartphone, QrCode, X, Globe } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import api from '../api/client';
-import { useI18n } from '../hooks/useI18n';
+import { useI18n, setLanguage as saveLang } from '../hooks/useI18n';
+import { toast } from '../components/ui/Toaster';
 
 export default function Settings() {
   const user = useAuthStore(s => s.user);
   const fetchMe = useAuthStore(s => s.fetchMe);
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [form, setForm] = useState({ username: user?.username || '', email: user?.email || '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState('');
+
+  // 2FA state
+  const [showEnable2FA, setShowEnable2FA] = useState(false);
+  const [showDisable2FA, setShowDisable2FA] = useState(false);
+  const [qrUrl, setQrUrl] = useState('');
+  const [secret2FA, setSecret2FA] = useState('');
+  const [totpToken, setTotpToken] = useState('');
+  const [loading2FA, setLoading2FA] = useState(false);
+  const [totpEnabled, setTotpEnabled] = useState((user as { totp_enabled?: number })?.totp_enabled === 1);
 
   const getRoleLabel = (role?: string) => {
     if (role === 'admin') return t('role.admin');
@@ -21,23 +30,74 @@ export default function Settings() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.password && form.password !== form.confirm) { setMsg(t('settings.passwordMismatch')); return; }
+    if (form.password && form.password !== form.confirm) { toast.error(t('settings.passwordMismatch')); return; }
     setLoading(true);
     try {
       await api.patch(`/users/${user?.id}`, { username: form.username, email: form.email, ...(form.password ? { password: form.password } : {}) });
       await fetchMe();
-      setMsg(t('settings.savedSuccess'));
+      toast.success(t('settings.savedSuccess'));
       setForm(p => ({ ...p, password: '', confirm: '' }));
     } catch {
-      setMsg(t('settings.savedError'));
+      toast.error(t('settings.savedError'));
     } finally {
       setLoading(false);
-      setTimeout(() => setMsg(''), 3000);
     }
+  };
+
+  const handle2FASetup = async () => {
+    setLoading2FA(true);
+    try {
+      const res = await api.get('/auth/2fa/setup');
+      setQrUrl(res.data.qrUrl);
+      setSecret2FA(res.data.secret);
+      setShowEnable2FA(true);
+    } catch {
+      toast.error('Nepodařilo se načíst 2FA setup');
+    } finally {
+      setLoading2FA(false);
+    }
+  };
+
+  const handleEnable2FA = async () => {
+    if (!totpToken) return;
+    setLoading2FA(true);
+    try {
+      await api.post('/auth/2fa/enable', { token: totpToken, secret: secret2FA });
+      toast.success('2FA povolena');
+      setShowEnable2FA(false);
+      setTotpEnabled(true);
+      setTotpToken('');
+    } catch {
+      toast.error('Neplatný TOTP kód');
+    } finally {
+      setLoading2FA(false);
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (!totpToken) return;
+    setLoading2FA(true);
+    try {
+      await api.post('/auth/2fa/disable', { token: totpToken });
+      toast.success('2FA zakázána');
+      setShowDisable2FA(false);
+      setTotpEnabled(false);
+      setTotpToken('');
+    } catch {
+      toast.error('Neplatný TOTP kód');
+    } finally {
+      setLoading2FA(false);
+    }
+  };
+
+  const handleLanguage = (l: string) => {
+    saveLang(l);
+    window.location.reload();
   };
 
   return (
     <div className="max-w-2xl space-y-5">
+      {/* Profile form */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="liquid-card p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(167,139,250,0.2)', border: '1px solid rgba(167,139,250,0.3)' }}>
@@ -78,17 +138,86 @@ export default function Settings() {
             </div>
           </div>
 
-          {msg && (
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm px-3 py-2 rounded-xl"
-              style={{ background: msg.includes('úspěšně') ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: msg.includes('úspěšně') ? '#22c55e' : '#f87171', border: `1px solid ${msg.includes('úspěšně') ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
-              {msg}
-            </motion.p>
-          )}
-
           <button type="submit" disabled={loading} className="glass-btn glass-btn-primary flex items-center gap-2 px-5 py-2.5 text-sm font-medium">
             <Save size={15} /> {loading ? t('settings.saving') : t('settings.save')}
           </button>
         </form>
+      </motion.div>
+
+      {/* Security / 2FA */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="liquid-card p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(56,189,248,0.2)', border: '1px solid rgba(56,189,248,0.3)' }}>
+            <Smartphone size={18} style={{ color: '#38bdf8' }} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">{t('settings.security')}</h3>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{t('settings.twofa')}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
+          <div className="flex items-center gap-3">
+            <QrCode size={16} style={{ color: totpEnabled ? '#22c55e' : 'rgba(255,255,255,0.4)' }} />
+            <div>
+              <div className="text-sm font-medium text-white">
+                {totpEnabled ? t('settings.twofaEnabled') : t('settings.twofaDisabled')}
+              </div>
+              <div className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                {totpEnabled ? 'Účet je chráněn TOTP' : 'Doporučujeme zapnout pro vyšší bezpečnost'}
+              </div>
+            </div>
+          </div>
+          {totpEnabled ? (
+            <button
+              onClick={() => { setShowDisable2FA(true); setTotpToken(''); }}
+              className="glass-btn glass-btn-danger px-4 py-2 text-xs"
+            >
+              {t('settings.disable2fa')}
+            </button>
+          ) : (
+            <button
+              onClick={handle2FASetup}
+              disabled={loading2FA}
+              className="glass-btn glass-btn-primary px-4 py-2 text-xs disabled:opacity-40"
+            >
+              {loading2FA ? 'Načítání...' : t('settings.enable2fa')}
+            </button>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Language */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="liquid-card p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(167,139,250,0.2)', border: '1px solid rgba(167,139,250,0.3)' }}>
+            <Globe size={18} style={{ color: '#a78bfa' }} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">{t('settings.language')}</h3>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Vyberte jazyk rozhraní</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {[
+            { code: 'cs', label: 'CS', flag: '🇨🇿' },
+            { code: 'sk', label: 'SK', flag: '🇸🇰' },
+            { code: 'en', label: 'EN', flag: '🇬🇧' },
+          ].map(l => (
+            <button
+              key={l.code}
+              onClick={() => handleLanguage(l.code)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+              style={{
+                background: lang === l.code ? 'rgba(124,58,237,0.25)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${lang === l.code ? 'rgba(124,58,237,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                color: lang === l.code ? '#a78bfa' : 'rgba(255,255,255,0.6)',
+              }}
+            >
+              <span>{l.flag}</span> {l.label}
+            </button>
+          ))}
+        </div>
       </motion.div>
 
       {/* Account info */}
@@ -110,6 +239,121 @@ export default function Settings() {
           ))}
         </div>
       </motion.div>
+
+      {/* Enable 2FA modal */}
+      <AnimatePresence>
+        {showEnable2FA && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.7)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="liquid-card p-6 w-full max-w-md"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-semibold text-white">Nastavení 2FA</h3>
+                <button onClick={() => setShowEnable2FA(false)} className="glass-btn p-1.5">
+                  <X size={14} style={{ color: 'rgba(255,255,255,0.5)' }} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                  Naskenujte QR kód v aplikaci Google Authenticator nebo Authy.
+                </p>
+                {qrUrl && (
+                  <div className="flex justify-center p-4 rounded-xl" style={{ background: 'white' }}>
+                    <img src={qrUrl} alt="2FA QR Code" className="w-48 h-48" />
+                  </div>
+                )}
+                <div className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <p className="text-[10px] mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Manuální kód:</p>
+                  <code className="text-sm font-mono" style={{ color: '#a78bfa' }}>{secret2FA}</code>
+                </div>
+                <div>
+                  <label className="block text-xs mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Ověřovací kód</label>
+                  <input
+                    className="glass-input w-full px-3 py-2.5 text-sm text-center font-mono text-lg tracking-widest"
+                    placeholder="000000"
+                    maxLength={6}
+                    value={totpToken}
+                    onChange={e => setTotpToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleEnable2FA}
+                    disabled={totpToken.length !== 6 || loading2FA}
+                    className="glass-btn glass-btn-primary flex-1 py-2.5 text-sm disabled:opacity-40"
+                  >
+                    {loading2FA ? 'Ověřování...' : 'Aktivovat 2FA'}
+                  </button>
+                  <button onClick={() => setShowEnable2FA(false)} className="glass-btn px-4 py-2.5 text-sm">
+                    Zrušit
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Disable 2FA modal */}
+      <AnimatePresence>
+        {showDisable2FA && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.7)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="liquid-card p-6 w-full max-w-sm"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white">Zakázat 2FA</h3>
+                <button onClick={() => setShowDisable2FA(false)} className="glass-btn p-1.5">
+                  <X size={14} style={{ color: 'rgba(255,255,255,0.5)' }} />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                  Zadejte aktuální TOTP kód pro zakázání 2FA.
+                </p>
+                <input
+                  className="glass-input w-full px-3 py-2.5 text-sm text-center font-mono text-lg tracking-widest"
+                  placeholder="000000"
+                  maxLength={6}
+                  value={totpToken}
+                  onChange={e => setTotpToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDisable2FA}
+                    disabled={totpToken.length !== 6 || loading2FA}
+                    className="glass-btn glass-btn-danger flex-1 py-2.5 text-sm disabled:opacity-40"
+                  >
+                    {loading2FA ? 'Ověřování...' : 'Zakázat 2FA'}
+                  </button>
+                  <button onClick={() => setShowDisable2FA(false)} className="glass-btn px-4 py-2.5 text-sm">
+                    Zrušit
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

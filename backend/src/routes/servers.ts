@@ -160,4 +160,16 @@ router.get('/:id/logs', (req: AuthRequest, res: Response) => {
   res.json(logs.reverse());
 });
 
+router.post('/:id/reinstall', (req: AuthRequest, res: Response) => {
+  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id) as { owner_id: string; name: string } | undefined;
+  if (!server) return res.status(404).json({ error: 'Server not found' });
+  if (req.user!.role !== 'admin' && server.owner_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
+
+  db.prepare("UPDATE servers SET status = 'installing' WHERE id = ?").run(req.params.id);
+  setTimeout(() => {
+    db.prepare("UPDATE servers SET status = 'stopped' WHERE id = ?").run(req.params.id);
+  }, 5000);
+  res.json({ success: true });
+});
+
 export default router;

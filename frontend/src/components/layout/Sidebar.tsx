@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Server, Egg, Network, Users, Settings, LogOut, Sparkles, ShieldCheck, Bell } from 'lucide-react';
+import { LayoutDashboard, Server, Egg, Network, Users, Settings, LogOut, Sparkles, ShieldCheck, Bell, ClipboardList, Megaphone, SlidersHorizontal, Key } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { useI18n } from '../../hooks/useI18n';
 
@@ -49,7 +49,7 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <div className="flex-1 space-y-1">
+      <div className="flex-1 space-y-1 overflow-y-auto">
         <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
           {t('nav.general')}
         </div>
@@ -69,9 +69,18 @@ export default function Sidebar() {
           </NavLink>
         ))}
 
+        {/* User section */}
+        <div className="px-3 mt-4 mb-2 text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
+          Moje
+        </div>
+        <NavLink to="/apikeys" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+          <Key size={16} />
+          {t('nav.apikeys')}
+        </NavLink>
+
         {(user?.role === 'admin' || user?.role === 'helper') && (
           <>
-            <div className="px-3 mt-5 mb-2 text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            <div className="px-3 mt-4 mb-2 text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
               {t('nav.administration')}
             </div>
             {user?.role === 'admin' && (
@@ -87,6 +96,18 @@ export default function Sidebar() {
                 <NavLink to="/webhooks" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
                   <Bell size={16} />
                   {t('nav.discord')}
+                </NavLink>
+                <NavLink to="/audit" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+                  <ClipboardList size={16} />
+                  {t('nav.audit')}
+                </NavLink>
+                <NavLink to="/announcements" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+                  <Megaphone size={16} />
+                  {t('nav.announcements')}
+                </NavLink>
+                <NavLink to="/panel-settings" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+                  <SlidersHorizontal size={16} />
+                  {t('nav.panel')}
                 </NavLink>
               </>
             )}

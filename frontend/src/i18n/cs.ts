@@ -196,6 +196,103 @@ const cs: Record<string, string> = {
   'chat.online': 'online',
   'chat.placeholder': 'Napište zprávu...',
   'chat.send': 'Odeslat',
+
+  // Navigation extras
+  'nav.audit': 'Audit log',
+  'nav.announcements': 'Oznámení',
+  'nav.panel': 'Panel',
+  'nav.apikeys': 'API Klíče',
+
+  // Server tabs
+  'server.files': 'Soubory',
+  'server.backups': 'Zálohy',
+  'server.schedules': 'Plány',
+  'server.databases': 'Databáze',
+  'server.players': 'Hráči',
+  'server.reinstall': 'Přeinstalovat server',
+
+  // Files
+  'files.title': 'Správce souborů',
+  'files.newFile': 'Nový soubor',
+  'files.newFolder': 'Nová složka',
+  'files.upload': 'Nahrát',
+  'files.save': 'Uložit',
+  'files.rename': 'Přejmenovat',
+  'files.delete': 'Smazat',
+  'files.empty': 'Prázdná složka',
+  'files.selectFile': 'Vyberte soubor pro úpravu',
+
+  // Backups
+  'backups.title': 'Zálohy',
+  'backups.create': 'Vytvořit zálohu',
+  'backups.restore': 'Obnovit',
+  'backups.delete': 'Smazat',
+  'backups.name': 'Název zálohy',
+  'backups.note': 'Poznámka',
+  'backups.noBackups': 'Žádné zálohy',
+  'backups.confirmRestore': 'Obnovit tuto zálohu?',
+  'backups.confirmDelete': 'Smazat tuto zálohu?',
+
+  // Schedules
+  'schedules.title': 'Plánované úlohy',
+  'schedules.add': 'Přidat úlohu',
+  'schedules.name': 'Název',
+  'schedules.enabled': 'Povolena',
+  'schedules.disabled': 'Zakázána',
+  'schedules.nextRun': 'Příští spuštění',
+  'schedules.action': 'Akce',
+  'schedules.payload': 'Příkaz/Akce',
+  'schedules.noSchedules': 'Žádné plánované úlohy',
+
+  // Databases
+  'databases.title': 'Databáze',
+  'databases.add': 'Přidat databázi',
+  'databases.name': 'Název',
+  'databases.host': 'Host',
+  'databases.username': 'Uživatelské jméno',
+  'databases.password': 'Heslo',
+  'databases.rotate': 'Rotovat heslo',
+  'databases.copy': 'Kopírovat connection string',
+  'databases.noDatabases': 'Žádné databáze',
+
+  // API Keys
+  'apikeys.title': 'API Klíče',
+  'apikeys.create': 'Vytvořit API klíč',
+  'apikeys.name': 'Název',
+  'apikeys.preview': 'Klíč',
+  'apikeys.permissions': 'Oprávnění',
+  'apikeys.lastUsed': 'Naposledy použit',
+  'apikeys.noKeys': 'Žádné API klíče',
+  'apikeys.saveKey': 'Uložte si klíč, nebude znovu zobrazen',
+
+  // Audit
+  'audit.title': 'Audit Log',
+  'audit.username': 'Uživatel',
+  'audit.action': 'Akce',
+  'audit.resource': 'Zdroj',
+  'audit.ip': 'IP adresa',
+  'audit.time': 'Čas',
+  'audit.noLogs': 'Žádné záznamy',
+
+  // Announcements
+  'announcements.title': 'Oznámení',
+  'announcements.create': 'Vytvořit oznámení',
+  'announcements.noAnnouncements': 'Žádná aktivní oznámení',
+
+  // Panel Settings
+  'panelSettings.title': 'Nastavení panelu',
+  'panelSettings.branding': 'Branding',
+  'panelSettings.smtp': 'SMTP konfigurace',
+  'panelSettings.testEmail': 'Testovat e-mail',
+
+  // 2FA / Security
+  'settings.security': 'Zabezpečení',
+  'settings.twofa': 'Dvoufaktorová autentifikace',
+  'settings.twofaEnabled': '2FA je povolena',
+  'settings.twofaDisabled': '2FA je zakázána',
+  'settings.enable2fa': 'Povolit 2FA',
+  'settings.disable2fa': 'Zakázat 2FA',
+  'settings.language': 'Jazyk',
 };
 
 export default cs;

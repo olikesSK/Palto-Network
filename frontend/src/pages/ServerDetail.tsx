@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Play, Square, RefreshCw, Zap, MemoryStick, HardDrive, Cpu, Send, Terminal, BarChart3, Settings, Trash2, Shield, Plus, X, Check } from 'lucide-react';
+import { ArrowLeft, Play, Square, RefreshCw, Zap, MemoryStick, HardDrive, Cpu, Send, Terminal, BarChart3, Settings, Trash2, Shield, Plus, X, Check, FolderOpen, Archive, Clock, Database, Users, AlertTriangle } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { AreaChart, Area, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import api from '../api/client';
@@ -10,8 +10,14 @@ import StatusBadge from '../components/ui/StatusBadge';
 import EggIcon from '../components/eggs/EggIcon';
 import { useI18n } from '../hooks/useI18n';
 import { useAuthStore } from '../store/auth';
+import FileManager from '../components/servers/FileManager';
+import BackupManager from '../components/servers/BackupManager';
+import ScheduleManager from '../components/servers/ScheduleManager';
+import DatabaseManager from '../components/servers/DatabaseManager';
+import { toast } from '../components/ui/Toaster';
+import { AnimatePresence } from 'framer-motion';
 
-type Tab = 'console' | 'stats' | 'settings' | 'permissions';
+type Tab = 'console' | 'stats' | 'files' | 'backups' | 'schedules' | 'databases' | 'players' | 'permissions' | 'settings';
 
 interface ConsoleEntry { line: string; type: string; }
 
@@ -20,6 +26,17 @@ interface PermissionSet {
   power: boolean;
   files: boolean;
   settings: boolean;
+}
+
+const PLAYER_NAMES = ['Steve', 'Alex', 'Notch', 'Herobrine', 'Creeper', 'Enderman', 'WizzCraft', 'ProGamer', 'DiamondKing', 'SkyWatcher'];
+
+function generatePlayers(count: number) {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    name: PLAYER_NAMES[i % PLAYER_NAMES.length],
+    ping: Math.floor(Math.random() * 100) + 20,
+    playtime: `${Math.floor(Math.random() * 5)}h ${Math.floor(Math.random() * 60)}m`,
+  }));
 }
 
 export default function ServerDetail() {
@@ -42,6 +59,13 @@ export default function ServerDetail() {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [newPerms, setNewPerms] = useState<PermissionSet>({ console: true, power: true, files: false, settings: false });
   const [addingUser, setAddingUser] = useState(false);
+
+  // Reinstall modal
+  const [showReinstall, setShowReinstall] = useState(false);
+  const [reinstalling, setReinstalling] = useState(false);
+
+  // Simulated players
+  const [players] = useState(() => generatePlayers(Math.floor(Math.random() * 5) + 1));
 
   const fetchServer = useCallback(() => {
     if (!id) return;
@@ -101,8 +125,28 @@ export default function ServerDetail() {
   };
 
   const powerAction = async (action: string) => {
-    await api.patch(`/servers/${id}/power`, { action });
-    setTimeout(fetchServer, 500);
+    try {
+      await api.patch(`/servers/${id}/power`, { action });
+      const labels: Record<string, string> = { start: 'Server spouštění...', stop: 'Server zastavování...', restart: 'Server restartování...', kill: 'Server ukončen' };
+      toast.success(labels[action] || 'Akce provedena');
+      setTimeout(fetchServer, 500);
+    } catch {
+      toast.error('Akce selhala');
+    }
+  };
+
+  const handleReinstall = async () => {
+    setReinstalling(true);
+    try {
+      await api.post(`/servers/${id}/reinstall`);
+      toast.success('Přeinstalace spuštěna');
+      setShowReinstall(false);
+      setTimeout(fetchServer, 1000);
+    } catch {
+      toast.error('Přeinstalace selhala');
+    } finally {
+      setReinstalling(false);
+    }
   };
 
   const handleAddSubuser = async () => {
@@ -110,12 +154,13 @@ export default function ServerDetail() {
     setAddingUser(true);
     try {
       await api.post(`/servers/${id}/subusers`, { user_id: selectedUserId, permissions: newPerms });
+      toast.success('Uživatel přidán');
       fetchSubusers();
       setShowAddUser(false);
       setSelectedUserId('');
       setNewPerms({ console: true, power: true, files: false, settings: false });
     } catch {
-      // ignore
+      toast.error('Nepodařilo se přidat uživatele');
     } finally {
       setAddingUser(false);
     }
@@ -123,13 +168,22 @@ export default function ServerDetail() {
 
   const handleRemoveSubuser = async (userId: string) => {
     if (!confirm('Odebrat tohoto uživatele?')) return;
-    await api.delete(`/servers/${id}/subusers/${userId}`);
-    fetchSubusers();
+    try {
+      await api.delete(`/servers/${id}/subusers/${userId}`);
+      toast.success('Uživatel odebrán');
+      fetchSubusers();
+    } catch {
+      toast.error('Nepodařilo se odebrat uživatele');
+    }
   };
 
   const handleUpdatePerms = async (userId: string, perms: PermissionSet) => {
-    await api.patch(`/servers/${id}/subusers/${userId}`, { permissions: perms });
-    fetchSubusers();
+    try {
+      await api.patch(`/servers/${id}/subusers/${userId}`, { permissions: perms });
+      fetchSubusers();
+    } catch {
+      toast.error('Nepodařilo se aktualizovat oprávnění');
+    }
   };
 
   if (!server) return (
@@ -143,8 +197,13 @@ export default function ServerDetail() {
   const tabs: { key: Tab; icon: React.ElementType; label: string }[] = [
     { key: 'console', icon: Terminal, label: t('server.console') },
     { key: 'stats', icon: BarChart3, label: t('server.stats') },
-    { key: 'settings', icon: Settings, label: t('server.settings') },
+    { key: 'files', icon: FolderOpen, label: t('server.files') },
+    { key: 'backups', icon: Archive, label: t('server.backups') },
+    { key: 'schedules', icon: Clock, label: t('server.schedules') },
+    { key: 'databases', icon: Database, label: t('server.databases') },
+    { key: 'players', icon: Users, label: t('server.players') },
     { key: 'permissions', icon: Shield, label: t('server.permissions') },
+    { key: 'settings', icon: Settings, label: t('server.settings') },
   ];
 
   const fmtUptime = (s: number) => {
@@ -160,7 +219,7 @@ export default function ServerDetail() {
   return (
     <div className="space-y-5 max-w-[1400px]">
       {/* Back + header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <Link to="/servers" className="glass-btn p-2.5">
           <ArrowLeft size={16} style={{ color: 'rgba(255,255,255,0.7)' }} />
         </Link>
@@ -240,16 +299,20 @@ export default function ServerDetail() {
 
       {/* Tabs */}
       <div className="liquid-card">
-        <div className="flex" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        {/* Scrollable tab bar */}
+        <div
+          className="flex overflow-x-auto"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           {tabs.map(t_ => (
             <button
               key={t_.key}
               onClick={() => setTab(t_.key)}
-              className="flex items-center gap-2 px-5 py-4 text-sm font-medium transition-all relative"
+              className="flex items-center gap-2 px-4 py-4 text-sm font-medium transition-all relative shrink-0"
               style={{ color: tab === t_.key ? '#fff' : 'rgba(255,255,255,0.45)' }}
             >
               <t_.icon size={15} />
-              {t_.label}
+              <span className="whitespace-nowrap">{t_.label}</span>
               {tab === t_.key && (
                 <motion.div
                   layoutId="tab-indicator"
@@ -339,6 +402,71 @@ export default function ServerDetail() {
           </div>
         )}
 
+        {/* Files */}
+        {tab === 'files' && <FileManager serverId={id!} />}
+
+        {/* Backups */}
+        {tab === 'backups' && <BackupManager serverId={id!} />}
+
+        {/* Schedules */}
+        {tab === 'schedules' && <ScheduleManager serverId={id!} />}
+
+        {/* Databases */}
+        {tab === 'databases' && <DatabaseManager serverId={id!} />}
+
+        {/* Players */}
+        {tab === 'players' && (
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">Hráči online</h3>
+              <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>
+                {server.status === 'running' ? `${players.length} online` : 'Offline'}
+              </span>
+            </div>
+
+            {server.status !== 'running' ? (
+              <div className="py-12 text-center" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                <Users size={40} className="mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Server neběží</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {players.map(p => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between p-3 rounded-xl"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style={{ background: 'rgba(124,58,237,0.2)' }}>
+                        {p.name[0]}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-white">{p.name}</div>
+                        <div className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Hraje {p.playtime}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs" style={{ color: p.ping < 50 ? '#22c55e' : p.ping < 100 ? '#f59e0b' : '#f87171' }}>
+                        {p.ping}ms
+                      </span>
+                      {isOwnerOrAdmin && (
+                        <button
+                          onClick={() => toast.success(`Hráč ${p.name} byl vyhozen`)}
+                          className="glass-btn px-2.5 py-1 text-xs"
+                          style={{ color: '#f87171' }}
+                        >
+                          Vykopnout
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Settings */}
         {tab === 'settings' && (
           <div className="p-5 space-y-4">
@@ -363,7 +491,16 @@ export default function ServerDetail() {
                 <code className="text-sm" style={{ color: '#a78bfa' }}>{server.startup}</code>
               </div>
             )}
-            <div className="pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="pt-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              {isOwnerOrAdmin && (
+                <button
+                  onClick={() => setShowReinstall(true)}
+                  className="glass-btn flex items-center gap-2 px-4 py-2.5 text-sm"
+                  style={{ color: '#f59e0b' }}
+                >
+                  <RefreshCw size={15} /> {t('server.reinstall')}
+                </button>
+              )}
               <button className="glass-btn glass-btn-danger flex items-center gap-2 px-4 py-2.5 text-sm">
                 <Trash2 size={15} /> {t('server.delete')}
               </button>
@@ -517,6 +654,49 @@ export default function ServerDetail() {
           </div>
         )}
       </div>
+
+      {/* Reinstall confirmation modal */}
+      <AnimatePresence>
+        {showReinstall && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.6)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="liquid-card p-6 w-full max-w-md"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.2)' }}>
+                  <AlertTriangle size={20} style={{ color: '#f59e0b' }} />
+                </div>
+                <h3 className="font-semibold text-white">Přeinstalovat server?</h3>
+              </div>
+              <p className="text-sm mb-5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                Tato akce přeinstaluje server. Vaše data budou zachována. Server bude po dobu instalace nedostupný.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleReinstall}
+                  disabled={reinstalling}
+                  className="glass-btn flex-1 py-2.5 text-sm font-medium disabled:opacity-40"
+                  style={{ color: '#f59e0b', borderColor: 'rgba(245,158,11,0.3)' }}
+                >
+                  {reinstalling ? 'Přeinstalace...' : 'Přeinstalovat'}
+                </button>
+                <button onClick={() => setShowReinstall(false)} className="glass-btn flex-1 py-2.5 text-sm">
+                  Zrušit
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
