@@ -191,6 +191,14 @@ export function initDatabase() {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS server_stats (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      server_id TEXT NOT NULL,
+      cpu REAL NOT NULL DEFAULT 0,
+      memory REAL NOT NULL DEFAULT 0,
+      timestamp TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   // Performance indexes
